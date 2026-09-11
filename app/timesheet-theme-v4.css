@@ -1,0 +1,60 @@
+/* TradeOS Timesheets v4 — remove legacy green/dark component styling */
+[data-product-view='timesheets'] .tos-ts{color:#172033!important}
+[data-product-view='timesheets'] .tos-ts-hero h2,[data-product-view='timesheets'] .tos-day-title h3,[data-product-view='timesheets'] .tos-week-person strong{color:#172033!important}
+[data-product-view='timesheets'] .tos-ts-hero p,[data-product-view='timesheets'] .tos-week-person small,[data-product-view='timesheets'] .tos-day-title small{color:#6b7280!important}
+
+/* Live timer */
+[data-product-view='timesheets'] .tos-live-timer{background:linear-gradient(180deg,#ffffff,#fbfcff)!important;border:1px solid #dbe4f3!important;border-top:4px solid #2f6bff!important;border-radius:22px!important;box-shadow:0 12px 30px rgba(15,23,42,.07)!important;color:#172033!important}
+[data-product-view='timesheets'] .tos-live-head h3{color:#172033!important}
+[data-product-view='timesheets'] .tos-live-head p{color:#6b7280!important}
+[data-product-view='timesheets'] .tos-live-head .eyebrow{color:#2f6bff!important}
+[data-product-view='timesheets'] .tos-live-dot{background:#13b88f!important;box-shadow:0 0 0 6px rgba(19,184,143,.11)!important}
+[data-product-view='timesheets'] .tos-live-field label{color:#475569!important}
+[data-product-view='timesheets'] .tos-live-field select{background:#ffffff!important;color:#172033!important;border:1px solid #cbd5e1!important;box-shadow:none!important}
+[data-product-view='timesheets'] .tos-live-field select:focus{border-color:#6b93ff!important;box-shadow:0 0 0 4px rgba(47,107,255,.10)!important}
+[data-product-view='timesheets'] .tos-timer-start{background:linear-gradient(145deg,#3d76ff,#2f6bff)!important;color:#ffffff!important;box-shadow:0 8px 20px rgba(47,107,255,.18)!important}
+[data-product-view='timesheets'] .tos-live-note{color:#738096!important;background:#f7f9fd!important;border:1px solid #e5eaf2!important;border-radius:13px!important;padding:11px 12px!important;margin-top:12px!important}
+[data-product-view='timesheets'] .tos-running-job strong{color:#172033!important}
+[data-product-view='timesheets'] .tos-running-job small{color:#6b7280!important}
+[data-product-view='timesheets'] .tos-elapsed{color:#2f6bff!important}
+[data-product-view='timesheets'] .tos-cancel-timer{background:#ffffff!important;color:#334155!important;border:1px solid #cbd5e1!important}
+[data-product-view='timesheets'] .tos-stop-btn{background:#fff1f2!important;color:#b33c45!important;border:1px solid #efc7ca!important}
+
+/* Week/day cards */
+[data-product-view='timesheets'] .tos-week-card,[data-product-view='timesheets'] .tos-day-card,[data-product-view='timesheets'] .tos-entry-card,[data-product-view='timesheets'] .tos-summary-card{background:#ffffff!important;border-color:#e2e8f0!important;color:#172033!important;box-shadow:0 8px 24px rgba(15,23,42,.055)!important}
+[data-product-view='timesheets'] .tos-day{background:#f8fafc!important;color:#334155!important;border-color:#dfe6ee!important}
+[data-product-view='timesheets'] .tos-day.active{background:#eaf1ff!important;border-color:#7fa2ff!important;box-shadow:0 0 0 2px rgba(47,107,255,.08) inset!important}
+[data-product-view='timesheets'] .tos-day .hours,[data-product-view='timesheets'] .tos-entry-hours{color:#2f6bff!important}
+[data-product-view='timesheets'] .tos-day.today .date{text-decoration-color:#2f6bff!important}
+[data-product-view='timesheets'] .tos-add-btn,[data-product-view='timesheets'] .tos-submit,[data-product-view='timesheets'] .tos-save{background:linear-gradient(145deg,#3d76ff,#2f6bff)!important;color:#fff!important}
+[data-product-view='timesheets'] .tos-edit-btn,[data-product-view='timesheets'] .tos-icon-btn{background:#fff!important;color:#334155!important;border-color:#cbd5e1!important}
+[data-product-view='timesheets'] .tos-status.submitted,[data-product-view='timesheets'] .tos-status.approved{background:#e8f8f4!important;color:#087b64!important;border-color:#bfe9dc!important}
+
+/* Bottom sheets from timer/manual entry */
+.tos-timer-sheet{background:rgba(15,23,42,.48)!important}
+.tos-timer-panel{background:#ffffff!important;color:#172033!important;border-color:#e2e8f0!important;box-shadow:0 -18px 50px rgba(15,23,42,.18)!important}
+.tos-timer-handle{background:#cbd5e1!important}
+.tos-timer-panel h3{color:#172033!important}
+.tos-timer-panel .sub{color:#6b7280!important}
+.tos-timer-panel select{background:#ffffff!important;color:#172033!important;border-color:#cbd5e1!important}
+.tos-timer-summary{background:#eaf1ff!important;border-color:#c8d8ff!important}
+.tos-timer-summary span{color:#64748b!important}
+.tos-timer-summary strong{color:#2f6bff!important}
+.tos-timer-back{background:#ffffff!important;color:#334155!important;border-color:#cbd5e1!important}
+.tos-timer-save,.tos-reopen-btn{background:#2f6bff!important;color:#ffffff!important}
+.tos-timer-danger{background:#fff1f2!important;color:#b33c45!important;border-color:#efc7ca!important}
+.tos-live-message.error,.tos-timer-error{background:#fff1f2!important;color:#b33c45!important;border-color:#efc7ca!important}
+.tos-timer-error strong{color:#8f2931!important}.tos-timer-error span{color:#8a5358!important}
+.tos-timer-error.soft{background:#fff8e8!important;border-color:#eed9ae!important}
+.tos-timer-success,.tos-live-message.success{background:#e8f8f4!important;color:#087b64!important;border-color:#bfe9dc!important}
+
+/* Manual time entry sheet */
+.tos-sheet-panel{background:#ffffff!important;color:#172033!important;border-color:#e2e8f0!important}
+.tos-sheet-head h3{color:#172033!important}.tos-sheet-handle{background:#cbd5e1!important}.tos-close{background:#f8fafc!important;color:#334155!important;border-color:#e2e8f0!important}
+.tos-field label{color:#475569!important}.tos-field input,.tos-field select,.tos-field textarea{background:#ffffff!important;color:#172033!important;border-color:#cbd5e1!important}
+.tos-clock-total{background:#eaf1ff!important;border-color:#c8d8ff!important}.tos-clock-total span{color:#64748b!important}.tos-clock-total strong{color:#2f6bff!important}
+.tos-lock-note{background:#f4f7ff!important;color:#64748b!important;border-color:#dbe5ff!important}.tos-inline-action{color:#2f6bff!important}
+
+@media(max-width:640px){
+  [data-product-view='timesheets'] .tos-live-timer{border-radius:20px!important;padding:17px!important}
+}
