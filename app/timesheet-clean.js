@@ -46,18 +46,25 @@
   async function loadContext(sourceCard,table,inputs){
     const dayOrder=[];const seen=new Set();
     for(const input of inputs){const d=input.dataset.hourDate;if(d&&!seen.has(d)){seen.add(d);dayOrder.push(d)}}
-    const rows=[...table.querySelectorAll('tbody tr')].map(row=>{
+    const legacyRows=[...table.querySelectorAll('tbody tr')].map(row=>{
       const first=row.querySelector('[data-hour-job]');
       if(!first)return null;
       return {id:first.dataset.hourJob,title:row.querySelector('.job-col strong')?.textContent?.trim()||'Job'};
     }).filter(Boolean);
-    const jobs=[...new Map(rows.map(r=>[r.id,r])).values()];
+    const legacyJobs=[...new Map(legacyRows.map(r=>[r.id,r])).values()];
     const {data:{user},error:userError}=await client.auth.getUser();
     if(userError||!user)throw new Error('Please sign in again.');
-    if(!jobs.length)throw new Error('No jobs are available for this timesheet.');
-    const {data:job,error:jobError}=await client.from('jobs').select('company_id').eq('id',jobs[0].id).single();
+    if(!legacyJobs.length)throw new Error('No jobs are available for this timesheet.');
+    const {data:job,error:jobError}=await client.from('jobs').select('company_id').eq('id',legacyJobs[0].id).single();
     if(jobError)throw jobError;
     const companyId=job.company_id;
+    const {data:jobRows,error:jobsError}=await client.rpc('list_timesheet_jobs_v2',{target_company:companyId});
+    if(jobsError)throw jobsError;
+    const jobs=(jobRows||[]).map(j=>({id:j.id,title:j.title||'Untitled job',status:j.status||''}));
+    if(!jobs.length)throw new Error('No jobs are available for this timesheet.');
+    syncLegacyJobMarkers(table,jobs);
+    window.TradeOSTimesheetJobs=jobs.map(j=>({...j,company_id:companyId}));
+    window.dispatchEvent(new CustomEvent('tradeos:timesheet-jobs',{detail:{companyId,count:jobs.length}}));
     const {data:membership}=await client.from('company_members').select('role,full_name').eq('company_id',companyId).eq('user_id',user.id).eq('active',true).maybeSingle();
     const role=membership?.role||'employee';
     const manager=['owner','admin','manager'].includes(role);
@@ -67,6 +74,31 @@
     const today=localIso(new Date());
     if(!selectedDate||!dayOrder.includes(selectedDate))selectedDate=dayOrder.includes(today)?today:dayOrder[0];
     return state;
+  }
+
+  function syncLegacyJobMarkers(table,jobs){
+    table.querySelectorAll('tr[data-tos-job-marker]').forEach(r=>r.remove());
+    const existing=new Set([...table.querySelectorAll('[data-hour-job]')].map(i=>i.dataset.hourJob).filter(Boolean));
+    const body=table.querySelector('tbody');
+    if(!body)return;
+    jobs.forEach(job=>{
+      if(existing.has(job.id))return;
+      const row=document.createElement('tr');
+      row.hidden=true;
+      row.dataset.tosJobMarker='1';
+      const title=document.createElement('td');
+      title.className='job-col';
+      const strong=document.createElement('strong');
+      strong.textContent=job.title||'Untitled job';
+      title.appendChild(strong);
+      const cell=document.createElement('td');
+      const marker=document.createElement('input');
+      marker.type='hidden';
+      marker.dataset.hourJob=job.id;
+      cell.appendChild(marker);
+      row.append(title,cell);
+      body.appendChild(row);
+    });
   }
 
   async function reloadData(state=ctx){
