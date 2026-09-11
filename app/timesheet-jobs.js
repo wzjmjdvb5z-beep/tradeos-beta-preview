@@ -4,13 +4,17 @@
   const client=window.supabase?.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:false,detectSessionInUrl:false}});
   let loading=false;
   let loadedCompany=null;
+  let cachedJobs=[];
+  let applyQueued=false;
+  const entryJobMap=new Map();
 
   async function refreshJobSource(force=false){
-    if(!client||loading)return;
+    if(!client)return cachedJobs;
+    if(loading)return cachedJobs;
     loading=true;
     try{
-      const {data:{user}}=await client.auth.getUser();
-      if(!user)return;
+      const {data:{user},error:userError}=await client.auth.getUser();
+      if(userError||!user)return cachedJobs;
 
       const {data:memberships,error:memberError}=await client
         .from('company_members')
@@ -19,21 +23,25 @@
         .eq('active',true)
         .order('created_at',{ascending:true});
       if(memberError)throw memberError;
-      if(!memberships?.length)return;
+      if(!memberships?.length)return [];
 
       const selectedCompany=document.querySelector('#company')?.value||null;
       const membership=memberships.find(m=>m.company_id===selectedCompany)||memberships[0];
       const companyId=membership.company_id;
-      if(!force&&loadedCompany===companyId&&document.querySelector('#tos-permitted-job-source'))return;
+
+      if(!force&&loadedCompany===companyId&&cachedJobs.length){
+        applyAll();
+        return cachedJobs;
+      }
 
       let jobs=[];
-      if(['owner','admin','manager'].includes(membership.role)){
+      if(['owner','admin','manager'].includes(String(membership.role||'').toLowerCase())){
         const {data,error}=await client
           .from('jobs')
           .select('id,title,status,created_at')
           .eq('company_id',companyId)
           .order('created_at',{ascending:false})
-          .limit(300);
+          .limit(500);
         if(error)throw error;
         jobs=data||[];
       }else{
@@ -42,7 +50,7 @@
           .select('job_id')
           .eq('company_id',companyId)
           .eq('member_id',membership.id)
-          .limit(500);
+          .limit(1000);
         if(assignmentError)throw assignmentError;
         const ids=[...new Set((assignments||[]).map(a=>a.job_id).filter(Boolean))];
         if(ids.length){
@@ -57,7 +65,6 @@
         }
       }
 
-      // Keep the most relevant jobs first, but leave completed jobs available for corrections.
       const rank=status=>{
         const s=String(status||'').toLowerCase();
         if(/in.?progress|active/.test(s))return 0;
@@ -66,10 +73,15 @@
         return 2;
       };
       jobs.sort((a,b)=>rank(a.status)-rank(b.status)||String(a.title||'').localeCompare(String(b.title||'')));
-      inject(jobs,companyId);
+      cachedJobs=jobs;
       loadedCompany=companyId;
+      inject(jobs,companyId);
+      applyAll();
+      document.dispatchEvent(new CustomEvent('tradeos:jobs-updated',{detail:{companyId,jobs:jobs.map(j=>({...j}))}}));
+      return jobs;
     }catch(err){
       console.warn('TradeOS job picker refresh failed',err);
+      return cachedJobs;
     }finally{
       loading=false;
     }
@@ -102,14 +114,91 @@
     document.body.appendChild(table);
   }
 
+  function queueApply(){
+    if(applyQueued)return;
+    applyQueued=true;
+    requestAnimationFrame(()=>{
+      applyQueued=false;
+      applyAll();
+    });
+  }
+
+  function applyAll(){
+    if(!cachedJobs.length)return;
+    document.querySelectorAll('#tos-timer-job,.tos-sheet select[name="job"],#tos-block-form select[name="job"]').forEach(applySelect);
+    decorateEntries();
+  }
+
+  function applySelect(select){
+    if(!select||!cachedJobs.length)return;
+    const current=String(select.value||'');
+    const currentOption=[...select.options].find(o=>o.value===current);
+    const currentLabel=currentOption?.textContent?.trim()||'Current job';
+    const sig=`${loadedCompany||''}:${cachedJobs.map(j=>j.id).join(',')}`;
+    if(select.dataset.tradeosJobsSig===sig&&[...select.options].some(o=>o.value===current))return;
+
+    const options=[];
+    if(current&&!cachedJobs.some(j=>j.id===current)){
+      options.push(`<option value="${esc(current)}" selected>${esc(currentLabel)} (existing)</option>`);
+    }
+    for(const job of cachedJobs){
+      options.push(`<option value="${esc(job.id)}" ${job.id===current?'selected':''}>${esc(job.title||'Untitled job')}</option>`);
+    }
+    select.innerHTML=options.join('');
+    if(current&&[...select.options].some(o=>o.value===current))select.value=current;
+    else if(cachedJobs[0])select.value=cachedJobs[0].id;
+    select.dataset.tradeosJobsSig=sig;
+  }
+
+  async function decorateEntries(){
+    const cards=[...document.querySelectorAll('.tos-entry-card')];
+    if(!cards.length)return;
+    const ids=cards.map(card=>card.querySelector('[data-entry-id]')?.dataset.entryId).filter(Boolean);
+    const missing=ids.filter(id=>!entryJobMap.has(id));
+    if(missing.length){
+      try{
+        const {data,error}=await client.from('weekly_time_entries').select('id,job_id').in('id',missing);
+        if(!error)(data||[]).forEach(row=>entryJobMap.set(row.id,row.job_id));
+      }catch{}
+    }
+    const jobsById=new Map(cachedJobs.map(j=>[j.id,j]));
+    cards.forEach(card=>{
+      const entryId=card.querySelector('[data-entry-id]')?.dataset.entryId;
+      const jobId=entryJobMap.get(entryId);
+      const job=jobsById.get(jobId);
+      const title=card.querySelector('.tos-entry-main strong');
+      if(job&&title)title.textContent=job.title||'Untitled job';
+    });
+  }
+
   document.addEventListener('change',e=>{
     if(e.target?.id==='company')setTimeout(()=>refreshJobSource(true),0);
   },true);
 
-  // Run after the core app starts, then retry once in case its first render is still loading.
+  document.addEventListener('click',e=>{
+    if(e.target?.closest?.('[data-nav="timesheets"]'))setTimeout(()=>refreshJobSource(true),80);
+    if(e.target?.closest?.('#tos-add,[data-entry-id]'))setTimeout(queueApply,30);
+  },true);
+
+  document.addEventListener('tradeos:time-entry-saved',()=>{
+    entryJobMap.clear();
+    setTimeout(()=>{refreshJobSource(true);queueApply();},80);
+  });
+
+  new MutationObserver(queueApply).observe(document.documentElement,{childList:true,subtree:true});
+
+  window.TradeOSJobSource={
+    refresh:(force=true)=>refreshJobSource(force),
+    get:async(force=false)=>{await refreshJobSource(force);return cachedJobs.map(j=>({...j}));},
+    peek:()=>cachedJobs.map(j=>({...j}))
+  };
+
   const start=()=>{
     refreshJobSource(true);
-    setTimeout(()=>refreshJobSource(true),900);
+    setTimeout(()=>refreshJobSource(true),700);
+    setTimeout(()=>refreshJobSource(true),1800);
   };
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
+
+  function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 })();
