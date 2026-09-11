@@ -87,9 +87,9 @@
       const save=form.querySelector('.tos-save');
       if(save){save.disabled=true;save.textContent='Saving…';}
       try{
-        const companyId=await getCompanyId(jobId);
+        const companyId=await withTimeout(getCompanyId(jobId),10000,'Could not load the job. Please try again.');
         const weekStart=getWeekStart(date);
-        const {error}=await client.rpc('upsert_weekly_time_entry_clock',{
+        const result=await withTimeout(client.rpc('upsert_weekly_time_entry_clock',{
           target_company:companyId,
           target_week_start:weekStart,
           target_job:jobId,
@@ -98,17 +98,28 @@
           end_at:endTime,
           break_mins:breakMinutes,
           entry_notes:null
-        });
-        if(error)throw error;
+        }),15000,'Saving took too long. Please check your connection and try again.');
+        if(result.error)throw result.error;
+
         clockCache.set(cacheKey(jobId,date),{job_id:jobId,work_date:date,start_time:startTime,end_time:endTime,break_minutes:breakMinutes,hours});
+
+        // Update the hidden compatibility grid locally only. Do not fire its change
+        // handler here: the clock RPC already saved the entry, and firing it caused
+        // a redundant second Supabase save/refresh that could leave iOS on “Saving…”.
         const source=document.querySelector(`[data-hour-job="${cssEscape(jobId)}"][data-hour-date="${date}"]`);
-        if(!source)throw new Error('The job is no longer available for this week.');
-        source.value=String(Math.round(hours*100)/100);
-        source.dispatchEvent(new Event('change',{bubbles:true}));
-        document.querySelector('.tos-sheet')?.remove();
+        if(source)source.value=String(Math.round(hours*100)/100);
+
+        const sheet=document.querySelector('.tos-sheet');
+        if(sheet)sheet.remove();
+
+        // Re-render the selected day from the updated local grid, then decorate the
+        // card with the persisted start/finish times. This gives immediate feedback.
+        const activeDay=document.querySelector(`.tos-day[data-tos-date="${date}"]`);
+        if(activeDay)activeDay.click();
+        setTimeout(()=>decorateActiveDay(true),80);
       }catch(err){
         alert(err?.message||'Could not save the time entry.');
-        if(save){save.disabled=false;save.textContent='Save time';}
+        if(save&&document.body.contains(save)){save.disabled=false;save.textContent='Save time';}
       }
     },true);
   }
@@ -178,6 +189,12 @@
     return data.company_id;
   }
 
+  function withTimeout(promise,ms,message){
+    return Promise.race([
+      promise,
+      new Promise((_,reject)=>setTimeout(()=>reject(new Error(message)),ms))
+    ]);
+  }
   function calculateHours(start,end,breakMinutes){
     if(!start||!end)return 0;
     let startMin=timeToMinutes(start),endMin=timeToMinutes(end);
