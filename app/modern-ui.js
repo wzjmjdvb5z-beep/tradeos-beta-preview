@@ -11,7 +11,13 @@
     signout:'<svg viewBox="0 0 24 24"><path d="M10 4H5v16h5M14 8l4 4-4 4M8 12h10"/></svg>'
   };
   let scheduled=false;
-  const descriptions={timesheets:'Log hours, timers and weekly timesheets',finance:'Job profit, invoices and payments',team:'People, rates and invitations',quotes:'Create and manage customer quotes'};
+  const descriptions={
+    schedule:'Plan jobs and allocate the team',
+    timesheets:'Hours, timers and weekly timesheets',
+    finance:'Job profit, invoices and payments',
+    team:'People, rates and invitations',
+    quotes:'Create and manage customer quotes'
+  };
 
   function schedule(){if(scheduled)return;scheduled=true;requestAnimationFrame(()=>{scheduled=false;enhance();});}
   function enhance(){
@@ -23,13 +29,19 @@
       const key=button.dataset.nav;
       const holder=button.querySelector('b');
       if(holder&&icons[key])holder.innerHTML=icons[key];
+      if(key==='timesheets'){
+        const label=button.querySelector('span');
+        if(label)label.textContent='Timesheets';
+      }
       button.classList.remove('modern-hidden');
     });
     nav.querySelector('.modern-more')?.remove();
 
     const role=(document.querySelector('.beta')?.textContent||'').toLowerCase();
     const worker=!/(owner|admin|manager)/.test(role);
-    const primary=worker?['home','schedule','jobs','timesheets']:['home','schedule','jobs','quotes'];
+    const primary=worker
+      ?['home','timesheets','jobs','schedule']
+      :['home','timesheets','jobs','quotes'];
     const available=new Set(buttons.map(x=>x.dataset.nav));
     const actualPrimary=primary.filter(x=>available.has(x));
     buttons.forEach(button=>{if(!actualPrimary.includes(button.dataset.nav))button.classList.add('modern-hidden');});
@@ -51,7 +63,7 @@
     overlay.className='modern-more-sheet';
     const items=secondaryButtons.map(button=>{
       const key=button.dataset.nav;
-      const label=button.querySelector('span')?.textContent||pretty(key);
+      const label=key==='schedule'?'Schedule':(button.querySelector('span')?.textContent||pretty(key));
       return `<button class="modern-more-item" data-more-target="${esc(key)}"><span class="modern-more-icon">${icons[key]||icons.more}</span><span><strong>${esc(label)}</strong><small>${esc(descriptions[key]||'Open this section')}</small></span></button>`;
     }).join('');
     overlay.innerHTML=`<div class="modern-more-panel" role="dialog" aria-modal="true" aria-label="More TradeOS sections"><div class="modern-more-handle"></div><h3 class="modern-more-title">More</h3><div class="modern-more-list">${items}<button class="modern-more-item dangerous" data-modern-signout><span class="modern-more-icon">${icons.signout}</span><span><strong>Sign out</strong><small>Sign out of TradeOS on this device</small></span></button></div><button class="btn secondary modern-more-close" type="button">Close</button></div>`;
