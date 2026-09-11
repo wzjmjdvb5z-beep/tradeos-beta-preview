@@ -257,6 +257,7 @@
   }
   function closeSheet(){document.querySelector('.tos-com-sheet')?.remove();document.body.classList.remove('tos-com-sheet-open');}
   document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSheet();});
+  document.addEventListener('click',e=>{if(e.target.closest?.('.bottom-nav [data-nav], .modern-more-item'))closeSheet();},true);
 
   async function busyButton(button,label,fn,errorBox){
     if(!button||button.disabled)return;
