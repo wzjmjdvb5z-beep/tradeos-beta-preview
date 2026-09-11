@@ -50,7 +50,7 @@
       card.querySelector('#tos-cancel-live')?.addEventListener('click',openCancelSheet);
       interval=setInterval(()=>{const el=document.getElementById('tos-elapsed');if(el)el.textContent=elapsedText(running.started_at)},1000);
     }else{
-      card.innerHTML=`<div class="tos-live-head"><div><p class="eyebrow">LIVE TIMER</p><h3>Start a job timer</h3><p>Pick the job and TradeOS will clock the time for you.</p></div><span class="tos-live-dot"></span></div>${jobs.length?`<div class="tos-live-form"><div class="tos-live-field"><label>Job</label><select id="tos-timer-job">${jobs.map(j=>`<option value="${esc(j.id)}">${esc(j.title)}</option>`).join('')}</select></div><button class="tos-timer-start" id="tos-start-live">Start timer</button></div><div id="tos-live-message"></div><div class="tos-live-note">Live timers always record today. Submitted or approved weeks cannot start a new timer.</div>`:`<div class="tos-live-note">Add or assign a job before starting a timer.</div>`}`;
+      card.innerHTML=`<div class="tos-live-head"><div><p class="eyebrow">LIVE TIMER</p><h3>Start a job timer</h3><p>Pick the job and TradeOS will clock the time for you.</p></div><span class="tos-live-dot"></span></div>${jobs.length?`<div class="tos-live-form"><div class="tos-live-field"><label>Job</label><select id="tos-timer-job">${jobs.map(j=>`<option value="${esc(j.id)}">${esc(j.title)}</option>`).join('')}</select></div><button class="tos-timer-start" id="tos-start-live">Start timer</button></div><div id="tos-live-message"></div><div class="tos-live-note">Approved weeks are finalised. Starting a timer on a submitted week returns it to Draft so the updated week can be submitted again.</div>`:`<div class="tos-live-note">Add or assign a job before starting a timer.</div>`}`;
       card.querySelector('#tos-start-live')?.addEventListener('click',startTimer);
     }
   }
@@ -108,16 +108,16 @@
       setTimeout(()=>location.reload(),120);
     }catch(err){
       if(save){save.disabled=false;save.textContent='Stop & save';}
-      if(isLockedError(err)) await renderLockedWeekAction(overlay,tick);
+      if(isFinalisedError(err)) await renderFinalisedWeekAction(overlay,tick);
       else if(message) message.innerHTML=`<div class="tos-timer-error"><strong>Couldn’t save that time</strong><span>${esc(friendlyError(err))}</span></div>`;
     }
   }
-  async function renderLockedWeekAction(overlay,tick){
+  async function renderFinalisedWeekAction(overlay,tick){
     const message=overlay.querySelector('#tos-stop-message');
     if(!message)return;
     const access=await getWeekAccess();
     if(access.canReopen&&access.sheetId){
-      message.innerHTML=`<div class="tos-timer-error soft"><strong>This week is already locked</strong><span>It was submitted or approved. Reopen it first, then TradeOS can save this timer.</span><button class="tos-reopen-btn" id="tos-reopen-save">Reopen week & save time</button></div>`;
+      message.innerHTML=`<div class="tos-timer-error soft"><strong>This week is finalised</strong><span>It has already been approved. Reopen it first if this timer needs to be added.</span><button class="tos-reopen-btn" id="tos-reopen-save">Reopen week & save time</button></div>`;
       overlay.querySelector('#tos-reopen-save')?.addEventListener('click',async e=>{
         const btn=e.currentTarget;
         try{
@@ -132,7 +132,7 @@
         }
       });
     }else{
-      message.innerHTML=`<div class="tos-timer-error soft"><strong>This week has already been submitted</strong><span>Ask a manager to reopen it before adding more time. Your live timer has not been lost.</span></div>`;
+      message.innerHTML=`<div class="tos-timer-error soft"><strong>This week has been approved</strong><span>Ask a manager to reopen the finalised week before adding more time. Your live timer has not been lost.</span></div>`;
     }
   }
   async function getWeekAccess(){
@@ -176,10 +176,10 @@
     el.innerHTML=`<div class="tos-live-message ${type}">${esc(text)}</div>`;
   }
   function clearLiveMessage(){const el=document.querySelector('#tos-live-message');if(el)el.innerHTML='';}
-  function isLockedError(err){return /locked|submitted|approved/i.test(String(err?.message||''));}
+  function isFinalisedError(err){return /finalised|approved/i.test(String(err?.message||''));}
   function friendlyError(err){
     const msg=String(err?.message||'Something went wrong.');
-    if(isLockedError(err))return 'This week has already been submitted or approved.';
+    if(isFinalisedError(err))return 'This week has already been approved and finalised.';
     return msg;
   }
   async function companyForJob(jobId){const {data,error}=await client.from('jobs').select('company_id').eq('id',jobId).single();if(error)throw error;return data.company_id;}
