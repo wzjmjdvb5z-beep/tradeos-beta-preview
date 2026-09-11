@@ -1,0 +1,8 @@
+.tos-clock-hidden{display:none!important}
+.tos-clock-block{display:grid;gap:14px}
+.tos-clock-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tos-clock-block input[type="time"]{font-variant-numeric:tabular-nums}
+.tos-clock-total{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:13px 14px;border:1px solid rgba(118,243,193,.22);background:rgba(118,243,193,.06);border-radius:14px}
+.tos-clock-total span{color:#9fb4b7;font-size:12px;font-weight:800}
+.tos-clock-total strong{color:#76f3c1;font-size:20px}
+@media(max-width:420px){.tos-clock-grid{grid-template-columns:1fr}.tos-clock-block .tos-field input,.tos-clock-block .tos-field select{font-size:17px;min-height:52px}}
