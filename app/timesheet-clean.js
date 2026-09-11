@@ -86,15 +86,26 @@
     if(!shell||!ctx)return;
     const today=localIso(new Date());
     const status=ctx.sheet?.status||'draft';
-    const locked=['submitted','approved'].includes(status.toLowerCase());
+    const statusKey=status.toLowerCase();
+    const locked=statusKey==='approved';
+    const submitted=statusKey==='submitted';
+    const rejected=statusKey==='rejected';
     const entries=ctx.entries.slice().sort(sortEntries);
     const dayTotals=Object.fromEntries(ctx.dayOrder.map(d=>[d,sum(entries.filter(e=>e.work_date===d).map(e=>e.hours))]));
     const total=sum(Object.values(dayTotals));
     const selectedEntries=entries.filter(e=>e.work_date===selectedDate);
     const jobsUsed=new Set(entries.map(e=>e.job_id)).size;
     const weekLabel=`${shortFmt.format(toDate(ctx.dayOrder[0]))} – ${shortFmt.format(toDate(ctx.dayOrder[6]))}`;
+    const statusNotice=locked
+      ? `<div class="tos-lock-note"><strong>Finalised.</strong> This week has been approved and is locked.${ctx.manager&&ctx.sheet?.id?` <button class="tos-inline-action" id="tos-reopen">Reopen week</button>`:' Contact a manager if a correction is still required.'}</div>`
+      : submitted
+        ? `<div class="tos-lock-note"><strong>Submitted for approval.</strong> You can still correct or add time until a manager approves it. Any change will move the week back to Draft and you’ll need to submit it again.</div>`
+        : rejected
+          ? `<div class="tos-lock-note"><strong>Changes requested.</strong>${ctx.sheet?.rejection_reason?` ${esc(ctx.sheet.rejection_reason)}`:' Update the timesheet and submit it again.'}</div>`
+          : '';
+
     shell.innerHTML=`
-      <div class="tos-ts-hero"><div><p class="eyebrow">TIMESHEETS</p><h2>Log time. Done.</h2><p>Each visit or task can have its own start and finish time.</p></div><span class="tos-status ${esc(status.toLowerCase())}">${esc(status)}</span></div>
+      <div class="tos-ts-hero"><div><p class="eyebrow">TIMESHEETS</p><h2>Log time. Done.</h2><p>Each visit or task can have its own start and finish time.</p></div><span class="tos-status ${esc(statusKey)}">${esc(status)}</span></div>
       <div class="tos-week-card">
         <div class="tos-week-head">
           <div class="tos-week-person"><strong>${esc(ctx.person)}</strong><small>${total?`${fmtHours(total)} hours this week`:'No time entered yet'}</small></div>
@@ -102,22 +113,22 @@
         </div>
         <div class="tos-days">${ctx.dayOrder.map(d=>dayButton(d,dayTotals[d],d===selectedDate,d===today)).join('')}</div>
       </div>
+      ${statusNotice}
       <div class="tos-day-section">
         <div class="tos-day-title"><div><h3>${esc(dateFmt.format(toDate(selectedDate)))}</h3><small>${fmtHours(dayTotals[selectedDate]||0)} hours · ${selectedEntries.length} ${selectedEntries.length===1?'entry':'entries'}</small></div><button class="tos-add-btn" id="tos-add" ${locked?'disabled':''}>+ Add time</button></div>
-        ${locked?`<div class="tos-lock-note">This week is <strong>${esc(status)}</strong>. ${ctx.manager?'Reopen it to correct or add time.':'Ask a manager to reopen it if a correction is needed.'}${ctx.manager&&ctx.sheet?.id?` <button class="tos-inline-action" id="tos-reopen">Reopen week</button>`:''}</div>`:''}
-        <div class="tos-entry-list">${selectedEntries.length?selectedEntries.map(entryCard).join(''):`<div class="tos-empty">No time entered for this day.<br>${locked?'':'Tap <strong>+ Add time</strong> to add the first block.'}</div>`}</div>
+        <div class="tos-entry-list">${selectedEntries.length?selectedEntries.map(entryCard).join(''):`<div class="tos-empty">No time entered for this day.<br>${locked?'This week is finalised.':'Tap <strong>+ Add time</strong> to add the first block.'}</div>`}</div>
       </div>
       <div class="tos-summary">
         <div class="tos-summary-card"><small>Week total</small><strong>${fmtHours(total)}h</strong></div>
         <div class="tos-summary-card"><small>Selected day</small><strong>${fmtHours(dayTotals[selectedDate]||0)}h</strong></div>
         <div class="tos-summary-card"><small>Jobs used</small><strong>${jobsUsed}</strong></div>
       </div>
-      ${locked?'':`<button class="tos-submit" id="tos-submit" ${total<=0||!ctx.sheet?.id?'disabled':''}>Submit week</button>`}
+      ${locked?'':submitted?`<div class="tos-lock-note"><strong>Waiting for approval.</strong> Editing is still available. If you make a correction, TradeOS will return the week to Draft automatically.</div>`:`<button class="tos-submit" id="tos-submit" ${total<=0||!ctx.sheet?.id?'disabled':''}>Submit week</button>`}
     `;
     shell.querySelectorAll('[data-tos-date]').forEach(b=>b.addEventListener('click',()=>{selectedDate=b.dataset.tosDate;render(shell)}));
     shell.querySelector('#tos-prev')?.addEventListener('click',()=>ctx.sourceCard.querySelector('#prev')?.click());
     shell.querySelector('#tos-next')?.addEventListener('click',()=>ctx.sourceCard.querySelector('#next')?.click());
-    shell.querySelector('#tos-add')?.addEventListener('click',()=>openEditor(null));
+    shell.querySelector('#tos-add')?.addEventListener('click',()=>{if(!locked)openEditor(null)});
     shell.querySelectorAll('[data-entry-id]').forEach(b=>b.addEventListener('click',()=>{
       const entry=ctx.entries.find(e=>e.id===b.dataset.entryId);
       if(entry&&!locked)openEditor(entry);
@@ -179,7 +190,9 @@
         : client.rpc('create_weekly_time_entry_clock',{target_company:ctx.companyId,target_week_start:ctx.weekStart,target_job:jobId,work_day:selectedDate,start_at:start,end_at:end,break_mins:breakMinutes,entry_notes:notes||null});
       const {error}=await withTimeout(rpc,15000,'Saving took too long. Please try again.');
       if(error)throw error;
+      const wasSubmitted=ctx.sheet?.status==='submitted';
       await reloadData();panel.remove();render();
+      if(wasSubmitted)showToast('Correction saved — week returned to Draft. Submit it again when ready.');
     }catch(err){setError(errorBox,prettyError(err));save.disabled=false;save.textContent=entry?'Save changes':'Add time';}
   }
 
@@ -188,21 +201,23 @@
     const btn=panel.querySelector('#tos-delete'),errorBox=panel.querySelector('#tos-form-error');
     try{
       btn.disabled=true;btn.textContent='Removing…';
+      const wasSubmitted=ctx.sheet?.status==='submitted';
       const {error}=await client.rpc('delete_weekly_time_entry',{target_entry:entry.id});
       if(error)throw error;
       await reloadData();panel.remove();render();
+      if(wasSubmitted)showToast('Entry removed — week returned to Draft. Submit it again when ready.');
     }catch(err){setError(errorBox,prettyError(err));btn.disabled=false;btn.textContent='Remove';}
   }
 
   async function submitWeek(){
     if(!ctx.sheet?.id)return;
     const btn=document.querySelector('#tos-submit');
-    try{if(btn){btn.disabled=true;btn.textContent='Submitting…'}const {error}=await client.rpc('submit_weekly_timesheet',{target_weekly_timesheet:ctx.sheet.id});if(error)throw error;await reloadData();render();}catch(err){if(btn){btn.disabled=false;btn.textContent='Submit week'}showToast(prettyError(err),true)}
+    try{if(btn){btn.disabled=true;btn.textContent='Submitting…'}const {error}=await client.rpc('submit_weekly_timesheet',{target_weekly_timesheet:ctx.sheet.id});if(error)throw error;await reloadData();render();showToast('Timesheet submitted for approval');}catch(err){if(btn){btn.disabled=false;btn.textContent='Submit week'}showToast(prettyError(err),true)}
   }
   async function reopenWeek(){
     if(!ctx.sheet?.id)return;
     const btn=document.querySelector('#tos-reopen');
-    try{if(btn){btn.disabled=true;btn.textContent='Reopening…'}const {error}=await client.rpc('reopen_weekly_timesheet',{target_weekly_timesheet:ctx.sheet.id});if(error)throw error;await reloadData();render();showToast('Week reopened');}catch(err){if(btn){btn.disabled=false;btn.textContent='Reopen week'}showToast(prettyError(err),true)}
+    try{if(btn){btn.disabled=true;btn.textContent='Reopening…'}const {error}=await client.rpc('reopen_weekly_timesheet',{target_weekly_timesheet:ctx.sheet.id});if(error)throw error;await reloadData();render();showToast('Finalised week reopened');}catch(err){if(btn){btn.disabled=false;btn.textContent='Reopen week'}showToast(prettyError(err),true)}
   }
 
   function suggestStart(entries){
@@ -227,8 +242,8 @@
   function localIso(date){const y=date.getFullYear(),m=String(date.getMonth()+1).padStart(2,'0'),d=String(date.getDate()).padStart(2,'0');return`${y}-${m}-${d}`}
   function withTimeout(promise,ms,message){return Promise.race([promise,new Promise((_,reject)=>setTimeout(()=>reject(new Error(message)),ms))])}
   function setError(el,msg){if(!el)return;el.textContent=msg;el.hidden=!msg}
-  function prettyError(err){const msg=String(err?.message||'Could not save the time entry.');if(msg.toLowerCase().includes('overlaps'))return'That time overlaps another entry on this day. Adjust the start or finish time.';if(msg.toLowerCase().includes('locked'))return'This week is locked. Reopen the week before making changes.';return msg}
-  function showToast(message,isError=false){let el=document.querySelector('.tos-mini-toast');if(!el){el=document.createElement('div');el.className='tos-mini-toast';document.body.appendChild(el)}el.textContent=message;el.classList.toggle('error',isError);el.classList.add('show');clearTimeout(showToast.t);showToast.t=setTimeout(()=>el.classList.remove('show'),2200)}
+  function prettyError(err){const msg=String(err?.message||'Could not save the time entry.');const lower=msg.toLowerCase();if(lower.includes('overlaps'))return'That time overlaps another entry on this day. Adjust the start or finish time.';if(lower.includes('finalised')||lower.includes('approved'))return'This week has been approved and finalised. A manager must reopen it before changes can be made.';if(lower.includes('running timer'))return'Stop your running timer before submitting this week.';return msg}
+  function showToast(message,isError=false){let el=document.querySelector('.tos-mini-toast');if(!el){el=document.createElement('div');el.className='tos-mini-toast';document.body.appendChild(el)}el.textContent=message;el.classList.toggle('error',isError);el.classList.add('show');clearTimeout(showToast.t);showToast.t=setTimeout(()=>el.classList.remove('show'),2600)}
   function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
