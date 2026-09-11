@@ -85,13 +85,14 @@
     const draft=ctx.quotes.filter(q=>q.status==='draft').length;
     const accepted=ctx.quotes.filter(q=>q.status==='accepted').length;
     wrap.innerHTML=`
-      <section class="tos-com-hero"><div><p class="eyebrow">QUOTES</p><h2>Quotes</h2><p>Create the price, keep it clear, then turn approved work into a job.</p></div>${ctx.isManager?'<button class="tos-com-primary" type="button" data-com-new-quote>New quote</button>':''}</section>
+      <section class="tos-com-hero"><div><p class="eyebrow">QUOTES</p><h2>Quotes</h2><p>Create the price, keep it clear, then turn approved work into a job.</p></div></section>
       <section class="tos-com-mini-summary"><div><span>Draft</span><strong>${draft}</strong></div><div><span>Converted</span><strong>${accepted}</strong></div><div><span>Total</span><strong>${ctx.quotes.length}</strong></div></section>
       ${ctx.isManager?`<button class="tos-com-action-card" type="button" data-com-new-quote><span class="tos-com-action-plus">+</span><span><strong>Create a quote</strong><small>Customer, job details and price</small></span><span class="tos-com-chevron">›</span></button>`:''}
       <section class="tos-com-section"><div class="tos-com-section-head"><div><h3>Your quotes</h3><p>${ctx.quotes.length?'Tap a quote to see the full breakdown.':'No quotes yet.'}</p></div></div>${ctx.quotes.length?`<div class="tos-com-list">${ctx.quotes.map(q=>quoteCard(q,ctx)).join('')}</div>`:emptyState('No quotes yet','Create your first quote to start the job flow.')}</section>`;
     wrap.querySelectorAll('[data-com-new-quote]').forEach(b=>b.addEventListener('click',()=>openQuoteForm(ctx)));
     wrap.querySelectorAll('[data-com-quote]').forEach(b=>b.addEventListener('click',e=>{if(e.target.closest('[data-com-convert]'))return;openQuoteDetail(b.dataset.comQuote,ctx);}));
     wrap.querySelectorAll('[data-com-convert]').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();convertQuote(b.dataset.comConvert,b);}));
+    if(window.__tradeosOpenNewQuote&&ctx.isManager){window.__tradeosOpenNewQuote=false;openQuoteForm(ctx);}
   }
 
   function quoteCard(q,ctx){
@@ -253,7 +254,7 @@
   function sheet(kicker,title,description){
     const overlay=document.createElement('div');overlay.className='tos-com-sheet';
     overlay.innerHTML=`<div class="tos-com-sheet-panel" role="dialog" aria-modal="true"><div class="tos-com-sheet-handle"></div><div class="tos-com-sheet-head"><div><p class="eyebrow">${esc(kicker)}</p><h3>${esc(title)}</h3>${description?`<p>${esc(description)}</p>`:''}</div><button type="button" class="tos-com-sheet-close" aria-label="Close">×</button></div><div class="tos-com-sheet-body"></div></div>`;
-    overlay.addEventListener('click',e=>{if(e.target===overlay)closeSheet();});overlay.querySelector('.tos-com-sheet-close').addEventListener('click',closeSheet);return overlay;
+    overlay.addEventListener('click',e=>{if(e.target===overlay)closeSheet();});overlay.querySelector('.tos-com-sheet-close').addEventListener('click',closeSheet);document.body.classList.add('tos-com-sheet-open');return overlay;
   }
   function closeSheet(){document.querySelector('.tos-com-sheet')?.remove();document.body.classList.remove('tos-com-sheet-open');}
   document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSheet();});
