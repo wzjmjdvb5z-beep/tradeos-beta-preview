@@ -8,7 +8,7 @@
     quotes:{title:'Quotes'},
     finance:{title:'Finance'},
     schedule:{title:'Schedule'},
-    timesheets:{title:'Time'},
+    timesheets:{title:'Timesheets'},
     team:{title:'Team'}
   };
 
@@ -52,8 +52,8 @@
     if(view==='home'){
       box.innerHTML=`<div class="tos-quick-actions">
         ${quick('quotes','＋','New quote',true)}
-        ${quick('schedule','▦','Today')}
         ${quick('timesheets','◷','Log time')}
+        ${quick('jobs','▣','Jobs')}
         ${quick('finance','£','Finance')}
       </div>`;
       bindQuick(box);
@@ -61,7 +61,7 @@
     }
 
     if(view==='jobs'){
-      box.innerHTML=`<div class="tos-quick-actions">${quick('schedule','▦','Schedule jobs',true)}${quick('quotes','＋','New quote')}</div>${filterMarkup('Search jobs…',['All','Booked','In progress','Complete'])}`;
+      box.innerHTML=`<div class="tos-quick-actions">${quick('timesheets','◷','Log time',true)}${quick('schedule','▦','Schedule')}${quick('quotes','＋','New quote')}</div>${filterMarkup('Search jobs…',['All','Booked','In progress','Complete'])}`;
       bindQuick(box);bindListFilter(box,wrap,'jobs');return box;
     }
 
@@ -84,19 +84,19 @@
     }
 
     if(view==='schedule'){
-      box.innerHTML=`<div class="tos-quick-actions"><button class="tos-quick primary" type="button" data-v2-today><span class="tos-qicon">●</span>Today</button>${quick('jobs','▣','All jobs')}${quick('timesheets','◷','Time')}</div>`;
+      box.innerHTML=`<div class="tos-quick-actions">${quick('timesheets','◷','Timesheets',true)}<button class="tos-quick" type="button" data-v2-today><span class="tos-qicon">●</span>Today</button>${quick('jobs','▣','All jobs')}</div>`;
       bindQuick(box);
       box.querySelector('[data-v2-today]')?.addEventListener('click',()=>clickByText(wrap,/today/i));
       return box;
     }
 
     if(view==='timesheets'){
-      box.innerHTML=`<div class="tos-quick-actions">${quick('schedule','▦','My schedule')}${quick('jobs','▣','Jobs')}</div>`;
+      box.innerHTML=`<div class="tos-quick-actions">${quick('jobs','▣','Jobs',true)}${quick('schedule','▦','Schedule')}</div>`;
       bindQuick(box);return box;
     }
 
     if(view==='team'){
-      box.innerHTML=`<div class="tos-quick-actions">${quick('schedule','▦','Schedule')}${quick('timesheets','◷','Timesheets')}${quick('finance','£','Finance')}</div>`;
+      box.innerHTML=`<div class="tos-quick-actions">${quick('timesheets','◷','Timesheets',true)}${quick('schedule','▦','Schedule')}${quick('finance','£','Finance')}</div>`;
       bindQuick(box);return box;
     }
     return null;
@@ -178,7 +178,7 @@
       title.dataset.v2copy='1';
       title.textContent='Everything you need to run today.';
       const sub=hero.querySelector('.sub');
-      if(sub)sub.textContent='Jobs, people, money and the next action — all in one place.';
+      if(sub)sub.textContent='Jobs, timesheets, money and the next action — all in one place.';
     }
   }
 
