@@ -51,6 +51,7 @@
       </div>`;
 
     panel.querySelectorAll('[data-home-nav]').forEach(btn=>btn.addEventListener('click',()=>{
+      if(btn.dataset.homeNav==='quotes')window.__tradeosOpenNewQuote=true;
       document.querySelector(`.bottom-nav [data-nav="${cssEsc(btn.dataset.homeNav)}"]`)?.click();
     }));
   }
