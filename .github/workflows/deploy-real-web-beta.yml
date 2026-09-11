@@ -1,0 +1,34 @@
+name: deploy-real-web-beta
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    if: github.event.head_commit.message == 'Bootstrap real TradeOS web beta deploy'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download verified TradeOS web artifact
+        env:
+          ARTIFACT_URL: "https://sdmntprnortheu.oaiusercontent.com/files/00000000-3b58-81f4-9941-4a58f8300966/raw?se=2026-09-11T18%3A57%3A55Z&sp=r&sv=2026-02-06&sr=b&scid=21a801dd-b202-5ab3-b77f-20c4258e29e0&skoid=56822d8b-6cfd-42ed-a00d-1452dca42036&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-09-11T07%3A01%3A01Z&ske=2026-09-12T07%3A01%3A01Z&sks=b&skv=2026-02-06&sig=OqFMxM3QIVq9K5SI6Xeci%2BkguU%2BcVcU2rHNgjrLveT4%3D"
+        run: |
+          set -euo pipefail
+          curl -L --fail --retry 2 "$ARTIFACT_URL" -o /tmp/tradeos-web.zip
+          rm -rf app
+          mkdir -p app
+          unzip -q /tmp/tradeos-web.zip -d app
+          test -f app/index.html
+          test -n "$(find app/_expo/static/js/web -type f -name 'AppEntry-*.js' -print -quit)"
+      - name: Commit live web beta
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app
+          git commit -m "Deploy real TradeOS web beta"
+          git push
