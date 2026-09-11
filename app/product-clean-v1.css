@@ -1,0 +1,134 @@
+/* TradeOS product clean pass — clarity first, actions on demand */
+:root{
+  --clean-bg:#f5f7fb;
+  --clean-card:#fff;
+  --clean-ink:#172033;
+  --clean-muted:#6f7b8e;
+  --clean-line:#e2e8f0;
+  --clean-line-strong:#cbd5e1;
+  --clean-blue:#2f6bff;
+  --clean-blue-soft:#edf3ff;
+  --clean-navy:#0b1220;
+  --clean-green:#0fae8a;
+  --clean-shadow:0 10px 28px rgba(15,23,42,.055);
+}
+
+body.tos-product-clean{background:var(--clean-bg)!important}
+body.tos-clean-sheet-open{overflow:hidden!important}
+
+/* Keep each screen focused. Search/filter remains on Jobs + Quotes; redundant shortcut rows go. */
+.tos-product-clean main.wrap[data-clean-view] > .tos-page-tools .tos-quick-actions{display:none!important}
+.tos-product-clean main.wrap[data-clean-view='home'] > .tos-page-tools,
+.tos-product-clean main.wrap[data-clean-view='finance'] > .tos-page-tools,
+.tos-product-clean main.wrap[data-clean-view='team'] > .tos-page-tools,
+.tos-product-clean main.wrap[data-clean-view='timesheets'] > .tos-page-tools,
+.tos-product-clean main.wrap[data-clean-view='schedule'] > .tos-page-tools{display:none!important}
+.tos-product-clean main.wrap[data-clean-view='jobs'] > .tos-page-tools,
+.tos-product-clean main.wrap[data-clean-view='quotes'] > .tos-page-tools{margin:0 0 14px!important;padding:0!important}
+.tos-product-clean .tos-filterbar{gap:9px!important;margin:0!important}
+.tos-product-clean .tos-search input{min-height:48px!important;border-radius:15px!important;box-shadow:none!important}
+.tos-product-clean .tos-filter-pills{gap:7px!important;overflow-x:auto!important;padding-bottom:2px!important;scrollbar-width:none}
+.tos-product-clean .tos-filter-pills::-webkit-scrollbar{display:none}
+.tos-product-clean .tos-filter-pill{min-height:38px!important;padding:0 14px!important;border-radius:999px!important;white-space:nowrap!important}
+
+/* Calmer page headings */
+.tos-product-clean main.wrap[data-clean-view='jobs'] > .hero,
+.tos-product-clean main.wrap[data-clean-view='quotes'] > .hero,
+.tos-product-clean main.wrap[data-clean-view='finance'] > .hero,
+.tos-product-clean main.wrap[data-clean-view='team'] > .hero{padding:5px 0 4px!important;margin:0 0 14px!important}
+.tos-product-clean main.wrap[data-clean-view] > .hero h2{font-size:clamp(30px,7vw,42px)!important;line-height:1.02!important;letter-spacing:-1.4px!important;margin:4px 0 0!important}
+.tos-product-clean main.wrap[data-clean-view] > .hero .sub{font-size:14px!important;line-height:1.45!important;margin-top:7px!important;max-width:560px!important}
+.tos-product-clean main.wrap[data-clean-view] > .hero .eyebrow{font-size:11px!important;letter-spacing:.18em!important;margin-bottom:2px!important}
+
+/* One obvious action card instead of permanent forms */
+.tos-clean-action-card{width:100%;border:1px solid #dbe4f2;background:#fff;color:var(--clean-ink);border-radius:20px;padding:15px 16px;display:grid;grid-template-columns:44px minmax(0,1fr) auto 18px;align-items:center;gap:12px;text-align:left;font:inherit;box-shadow:var(--clean-shadow);margin:0 0 14px;cursor:pointer}
+.tos-clean-action-card:active{transform:translateY(1px)}
+.tos-clean-action-icon{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;background:var(--clean-blue-soft);color:var(--clean-blue);font-size:25px;font-weight:500;line-height:1}
+.tos-clean-action-copy{min-width:0}.tos-clean-action-copy strong{display:block;color:var(--clean-ink);font-size:16px;font-weight:900;line-height:1.15}.tos-clean-action-copy small{display:block;color:var(--clean-muted);font-size:12px;line-height:1.35;margin-top:4px;white-space:normal}
+.tos-clean-action-label{font-size:12px;font-weight:850;color:var(--clean-blue);white-space:nowrap}
+.tos-clean-action-chevron{font-size:25px;color:#9aa6b8;line-height:1}
+
+/* Shared app sheet */
+.tos-clean-sheet{position:fixed;inset:0;z-index:12000;background:rgba(11,18,32,.48);display:flex;align-items:flex-end;justify-content:center;padding-top:6vh;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.tos-clean-sheet-panel{width:min(760px,100%);max-height:94dvh;background:#fff;border:1px solid #e2e8f0;border-bottom:0;border-radius:28px 28px 0 0;box-shadow:0 -24px 70px rgba(15,23,42,.22);display:flex;flex-direction:column;overflow:hidden}
+.tos-clean-sheet-handle{width:42px;height:5px;border-radius:999px;background:#cbd5e1;margin:9px auto 5px;flex:0 0 auto}
+.tos-clean-sheet-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding:13px 20px 15px;border-bottom:1px solid #edf1f5;flex:0 0 auto}
+.tos-clean-sheet-head .eyebrow{margin:0 0 4px;font-size:10px;letter-spacing:.18em}.tos-clean-sheet-head h3{margin:0;color:var(--clean-ink);font-size:24px;letter-spacing:-.6px}.tos-clean-sheet-head p:not(.eyebrow){margin:6px 0 0;color:var(--clean-muted);font-size:13px;line-height:1.4}
+.tos-clean-sheet-close{width:38px;height:38px;border:1px solid var(--clean-line);border-radius:12px;background:#f8fafc;color:#334155;font-size:25px;line-height:1;display:grid;place-items:center;flex:0 0 auto}
+.tos-clean-sheet-content{padding:18px 20px calc(22px + env(safe-area-inset-bottom));overflow:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.tos-clean-sheet-content .card,.tos-clean-sheet-content .section{box-shadow:none!important;border:0!important;border-radius:0!important;padding:0!important;margin:0!important;background:transparent!important}
+.tos-clean-sheet-content .section-head[hidden]{display:none!important}
+
+/* Quotes: list first, full builder only when requested */
+.tos-clean-quotes .quote-layout[hidden]{display:none!important}
+.tos-clean-quotes > section.card.section{border-radius:20px!important;padding:16px!important;box-shadow:var(--clean-shadow)!important}
+.tos-clean-quotes > section.card.section .section-head{margin-bottom:8px!important}
+.tos-clean-quotes > section.card.section .section-head h3{font-size:18px!important}
+.tos-clean-quotes .list .item{padding:14px 2px!important;border-bottom:1px solid #edf1f5!important;border-radius:0!important;box-shadow:none!important;background:transparent!important}
+.tos-clean-quotes .list .item:last-child{border-bottom:0!important}
+.tos-clean-quotes .item-main strong{font-size:15px!important}.tos-clean-quotes .item-main small{font-size:11.5px!important;line-height:1.4!important}
+.tos-clean-quotes .item-side{gap:6px!important}.tos-clean-quotes .amount{font-size:15px!important}
+.tos-clean-quote-sheet .quote-layout{display:grid!important;grid-template-columns:minmax(0,1fr) 230px!important;gap:16px!important;align-items:start!important}
+.tos-clean-quote-sheet .quote-total{position:sticky!important;top:0!important;border:1px solid var(--clean-line)!important;border-radius:18px!important;padding:16px!important;background:#f8fafc!important}
+.tos-clean-quote-sheet .form-grid{gap:13px!important}.tos-clean-quote-sheet .field{gap:6px!important}.tos-clean-quote-sheet .field label{font-size:12px!important;font-weight:800!important}.tos-clean-quote-sheet input,.tos-clean-quote-sheet textarea,.tos-clean-quote-sheet select{min-height:48px!important;border-radius:14px!important}.tos-clean-quote-sheet textarea{min-height:96px!important}
+
+/* Jobs: existing cleaner, with a calmer list */
+.tos-clean-jobs .jobs-add-trigger{margin-bottom:14px!important}
+.tos-clean-jobs .jobs-list-clean{padding:14px 16px!important;border-radius:20px!important}
+.tos-clean-jobs .jobs-list-clean .section-head{margin-bottom:6px!important}.tos-clean-jobs .jobs-list-clean .section-head h3{font-size:18px!important}
+.tos-clean-jobs .jobs-list-clean .list .item{box-shadow:none!important;border:0!important;border-bottom:1px solid #edf1f5!important;border-radius:0!important;background:transparent!important;padding:14px 0!important}
+.tos-clean-jobs .jobs-list-clean .list .item:last-child{border-bottom:0!important}
+
+/* Finance: compact summary; profit cards show only what matters until expanded */
+.tos-clean-finance-summary{display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:1px!important;background:#e8edf4!important;border:1px solid #e2e8f0!important;border-radius:20px!important;overflow:hidden!important;box-shadow:var(--clean-shadow)!important;margin-bottom:14px!important}
+.tos-clean-finance-summary .stat{min-height:82px!important;border:0!important;border-radius:0!important;box-shadow:none!important;padding:14px!important;background:#fff!important}.tos-clean-finance-summary .stat:first-child{background:#fff!important}.tos-clean-finance-summary .stat:first-child span{color:var(--clean-muted)!important}.tos-clean-finance-summary .stat:first-child strong{color:var(--clean-ink)!important}
+.tos-clean-finance-summary .stat span{font-size:10px!important;letter-spacing:.02em!important}.tos-clean-finance-summary .stat strong{font-size:18px!important;letter-spacing:-.4px!important}
+.tos-clean-finance > section.card.section{border-radius:20px!important;padding:16px!important;box-shadow:var(--clean-shadow)!important;margin-top:14px!important}
+.tos-clean-finance .finance-grid{display:grid!important;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))!important;gap:10px!important}
+.tos-clean-finance .finance-card{border:1px solid var(--clean-line)!important;border-radius:18px!important;padding:15px!important;background:#fff!important;box-shadow:none!important}
+.tos-clean-finance .finance-card h4{font-size:15px!important;margin:0!important}.tos-clean-finance .finance-card > .sub{font-size:11.5px!important;margin:4px 0 10px!important}
+.tos-clean-finance .finance-metrics{display:grid!important;grid-template-columns:1fr 1fr!important;gap:8px!important}.tos-clean-finance .metric{padding:10px 11px!important;border-radius:12px!important;background:#f8fafc!important;border:1px solid #edf1f5!important}.tos-clean-finance .metric small{font-size:10px!important}.tos-clean-finance .metric strong{font-size:14px!important}
+.tos-clean-finance .tos-clean-key-metric{background:#f4f8ff!important;border-color:#dce7ff!important}.tos-clean-finance .tos-clean-key-metric strong{font-size:16px!important}
+.tos-clean-profit-collapsed .tos-clean-detail-metric{display:none!important}
+.tos-clean-breakdown-toggle,.tos-clean-inline-toggle{border:0;background:transparent;color:var(--clean-blue);font:inherit;font-size:12px;font-weight:850;padding:9px 0 0;cursor:pointer}
+.tos-clean-finance .invoice-card{padding:14px 0!important;border:0!important;border-bottom:1px solid #edf1f5!important;border-radius:0!important;box-shadow:none!important;background:transparent!important}.tos-clean-finance .invoice-card:last-child{border-bottom:0!important}
+
+/* Team: people first; inviting and rate editing are deliberate actions */
+.tos-clean-team .team-grid{display:grid!important;grid-template-columns:minmax(0,1.25fr) minmax(280px,.75fr)!important;gap:14px!important;align-items:start!important}
+.tos-clean-team .team-grid > .card,.tos-clean-team .tos-rates-card{border-radius:20px!important;padding:16px!important;box-shadow:var(--clean-shadow)!important}
+.tos-clean-team .team-grid .list .item{padding:13px 0!important;border:0!important;border-bottom:1px solid #edf1f5!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}.tos-clean-team .team-grid .list .item:last-child{border-bottom:0!important}
+.tos-clean-team .tos-rates-card{margin:0 0 14px!important}.tos-clean-team .tos-rates-card .section-head{align-items:center!important;margin-bottom:0!important}.tos-clean-team .tos-rates-card.tos-clean-collapsed{padding-bottom:14px!important}.tos-clean-team .tos-rate-row{border-radius:15px!important;box-shadow:none!important}
+.tos-clean-team .section-head h3{font-size:18px!important}
+.tos-clean-invite-sheet form{display:grid!important;grid-template-columns:1fr 1fr!important;gap:14px!important}.tos-clean-invite-sheet form .btn{grid-column:1/-1!important;min-height:50px!important;border-radius:15px!important}
+
+/* Schedule: keep the diary, remove the duplicate unscheduled list (Schedule job button still opens it). */
+.tos-clean-schedule [data-clean-hidden='1']{display:none!important}
+.tos-clean-schedule .tos-schedule-hero{padding:6px 0 12px!important;margin:0!important}.tos-clean-schedule .tos-schedule-hero h2{font-size:clamp(30px,7vw,42px)!important;letter-spacing:-1.3px!important}
+.tos-clean-schedule .tos-schedule-toolbar{border-radius:18px!important;padding:10px!important;box-shadow:var(--clean-shadow)!important}
+.tos-clean-schedule .tos-schedule-summary{display:grid!important;grid-template-columns:repeat(4,1fr)!important;gap:8px!important;margin:10px 0 14px!important}.tos-clean-schedule .tos-schedule-summary > *{min-height:72px!important;border-radius:15px!important;padding:11px!important;box-shadow:none!important}
+.tos-clean-schedule .tos-day-column,.tos-clean-schedule .tos-today-card{border-radius:18px!important;box-shadow:var(--clean-shadow)!important}
+
+/* Timesheets are already task-focused: remove secondary shortcuts and keep breathing room. */
+.tos-clean-timesheets{padding-bottom:28px!important}
+
+/* Forms everywhere: easier to scan and tap */
+.tos-product-clean .field label,.tos-product-clean .tos-field label{font-size:12px!important;font-weight:800!important;color:#475569!important}
+.tos-product-clean input,.tos-product-clean select,.tos-product-clean textarea{font-size:16px!important}
+.tos-product-clean .btn{min-height:44px!important;border-radius:13px!important;font-weight:850!important}
+
+@media(max-width:760px){
+  .tos-clean-action-card{grid-template-columns:42px minmax(0,1fr) 18px;padding:14px;border-radius:18px}.tos-clean-action-label{display:none}.tos-clean-action-icon{width:42px;height:42px;border-radius:13px}
+  .tos-clean-sheet{padding-top:4vh}.tos-clean-sheet-panel{max-height:96dvh;border-radius:25px 25px 0 0}.tos-clean-sheet-head{padding:12px 17px 14px}.tos-clean-sheet-head h3{font-size:22px}.tos-clean-sheet-content{padding:16px 17px calc(18px + env(safe-area-inset-bottom))}
+  .tos-clean-quote-sheet .quote-layout{grid-template-columns:1fr!important}.tos-clean-quote-sheet .quote-total{position:static!important;order:-1!important}.tos-clean-quote-sheet .form-grid{grid-template-columns:1fr!important}.tos-clean-quote-sheet .field.full{grid-column:auto!important}
+  .tos-clean-finance-summary{grid-template-columns:1fr 1fr!important}.tos-clean-finance-summary .stat:last-child{grid-column:1/-1!important}.tos-clean-finance-summary .stat{min-height:72px!important;padding:12px!important}.tos-clean-finance-summary .stat strong{font-size:17px!important}
+  .tos-clean-finance .finance-grid{grid-template-columns:1fr!important}.tos-clean-finance .finance-metrics{grid-template-columns:1fr 1fr!important}
+  .tos-clean-team .team-grid{grid-template-columns:1fr!important}.tos-clean-invite-sheet form{grid-template-columns:1fr!important}.tos-clean-invite-sheet form .btn{grid-column:auto!important}
+  .tos-clean-schedule .tos-schedule-summary{grid-template-columns:1fr 1fr!important}.tos-clean-schedule .tos-schedule-toolbar{gap:8px!important}
+}
+
+@media(max-width:430px){
+  .tos-product-clean main.wrap[data-clean-view] > .hero h2{font-size:34px!important}
+  .tos-clean-action-copy strong{font-size:15px}.tos-clean-action-copy small{font-size:11.5px}
+  .tos-clean-finance .finance-metrics{grid-template-columns:1fr 1fr!important}
+  .tos-clean-finance .metric{padding:9px!important}
+}
