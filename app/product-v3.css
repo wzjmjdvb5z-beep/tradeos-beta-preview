@@ -1,0 +1,76 @@
+:root{
+  --v3-bg:#f5f7fb;
+  --v3-surface:#ffffff;
+  --v3-surface-soft:#f8fafc;
+  --v3-ink:#0b1220;
+  --v3-text:#172033;
+  --v3-muted:#6b7280;
+  --v3-line:#e2e8f0;
+  --v3-line-strong:#cbd5e1;
+  --v3-blue:#2f6bff;
+  --v3-blue-dark:#1e4fd6;
+  --v3-blue-soft:#eaf1ff;
+  --v3-teal:#0fae8a;
+  --v3-teal-soft:#e8f8f4;
+  --v3-amber:#c47a13;
+  --v3-red:#d84f59;
+  --v3-shadow:0 10px 28px rgba(15,23,42,.07);
+}
+
+html{background:var(--v3-bg)!important;color-scheme:light!important}
+body{background:var(--v3-bg)!important;color:var(--v3-text)!important}
+.app{background:linear-gradient(180deg,#eef3ff 0,#f7f9fc 250px,#f5f7fb 100%)!important}
+.wrap{color:var(--v3-text)!important}
+
+/* Premium navy app chrome */
+.topbar{background:rgba(11,18,32,.97)!important;box-shadow:0 1px 0 rgba(255,255,255,.05)!important}
+.logo{background:linear-gradient(145deg,#5c86ff,#2f6bff)!important;color:#fff!important;box-shadow:0 8px 22px rgba(47,107,255,.28)!important}
+.brand h1{color:#fff!important}.beta{color:#b8c3d6!important;background:rgba(255,255,255,.07)!important}.topbar select{background:#151f33!important;color:#fff!important;border-color:rgba(255,255,255,.11)!important}
+.bottom-nav{background:rgba(11,18,32,.97)!important;border-color:rgba(255,255,255,.09)!important;box-shadow:0 18px 50px rgba(15,23,42,.28)!important}
+.nav{color:#95a2b9!important}.nav.active{background:rgba(47,107,255,.18)!important;color:#9db9ff!important}.nav.active b svg{stroke:#9db9ff!important}
+
+/* Core surfaces */
+.card,.section,.stat,.member,.review,.item,.quote-total{background:var(--v3-surface)!important;color:var(--v3-text)!important;border-color:var(--v3-line)!important;box-shadow:var(--v3-shadow)!important}
+.section-head h3,.item-main strong,.member strong,.amount,.money-row strong,.stat strong{color:var(--v3-text)!important}.section-head p,.item-main small,.member small,.sub,.stat span{color:var(--v3-muted)!important}.hero h2{color:var(--v3-text)!important}.hero .sub{color:var(--v3-muted)!important}.eyebrow{color:var(--v3-blue)!important}
+.notice{background:#eef4ff!important;color:#41536f!important;border-color:#dce7ff!important}
+
+.stats .stat:first-child{background:linear-gradient(145deg,#0b1220,#16233b)!important;border-color:#1f2f4c!important}.stats .stat:first-child span{color:#b9c6db!important}.stats .stat:first-child strong{color:#8fb0ff!important}.stat{background:linear-gradient(180deg,#fff,#fbfcfe)!important}
+
+/* Buttons and inputs */
+.btn:not(.secondary):not(.danger):not(.blue),.tos-add-btn,.tos-submit,.tos-save,.tos-rate-save{background:linear-gradient(145deg,#3d76ff,#2f6bff)!important;color:#fff!important;box-shadow:0 8px 20px rgba(47,107,255,.18)!important}
+.btn.blue{background:linear-gradient(145deg,#3d76ff,#2f6bff)!important;color:#fff!important}.btn.secondary{background:#fff!important;color:#1f2937!important;border-color:var(--v3-line-strong)!important}.btn.danger{background:#fff1f2!important;color:#b94049!important;border-color:#efc7ca!important}
+label,.tos-field label{color:#475569!important}input,select,textarea,.tos-field input,.tos-field select,.tos-field textarea{background:#fbfcfe!important;color:#172033!important;border-color:var(--v3-line-strong)!important}input::placeholder,textarea::placeholder{color:#9aa4b2!important}input:focus,select:focus,textarea:focus,.tos-field input:focus,.tos-field select:focus,.tos-field textarea:focus{background:#fff!important;border-color:#6b93ff!important;box-shadow:0 0 0 4px rgba(47,107,255,.10)!important}
+
+.status{background:#f4f6f8!important;color:#64748b!important;border-color:#dce3ea!important}.status.draft{background:#fff7e8!important;color:#9f6617!important;border-color:#efd9aa!important}.status.submitted,.status.accepted,.status.approved{background:var(--v3-teal-soft)!important;color:#087b64!important;border-color:#bfe9dc!important}.status.rejected{background:#fff0f1!important;color:#b73d46!important;border-color:#efc2c6!important}.money-row{color:var(--v3-muted)!important;border-bottom-color:#e8edf3!important}.money-row.total strong{color:var(--v3-blue)!important}.pill{background:#f4f6f9!important;color:#64748b!important;border-color:#dde4eb!important}
+
+/* Page tools */
+.tos-quick{background:#fff!important;color:#223047!important;border-color:var(--v3-line)!important;box-shadow:0 6px 16px rgba(15,23,42,.04)!important}.tos-quick.primary{background:var(--v3-blue)!important;color:#fff!important;border-color:var(--v3-blue)!important}.tos-quick .tos-qicon{background:var(--v3-blue-soft)!important;color:var(--v3-blue)!important}.tos-quick.primary .tos-qicon{background:rgba(255,255,255,.18)!important;color:#fff!important}.tos-search input{background:#fff!important}.tos-search:before{color:#7b8799!important}.tos-filter-pill{background:#fff!important;color:#64748b!important;border-color:var(--v3-line)!important}.tos-filter-pill.active{background:#15233a!important;color:#fff!important;border-color:#15233a!important}.tos-empty-filter{background:#fff!important;color:var(--v3-muted)!important;border-color:var(--v3-line-strong)!important}
+
+/* Timesheets: blue for interaction, teal only for completed/success */
+.tos-week-card,.tos-day-card,.tos-entry-card,.tos-summary-card,.tos-timer-card,.timesheet-wrap,.job-chip{background:#fff!important;color:var(--v3-text)!important;border-color:var(--v3-line)!important;box-shadow:var(--v3-shadow)!important}.tos-week-person small,.tos-day-title small,.tos-entry-main small,.tos-summary-card small,.tos-clock-total span,.tos-lock-note,.tos-timer-card small{color:var(--v3-muted)!important}.tos-icon-btn,.tos-edit-btn,.tos-cancel-style{background:#fff!important;color:#24324a!important;border-color:var(--v3-line-strong)!important}.tos-week-label{color:#334155!important}.tos-day{background:#f8fafc!important;color:#334155!important;border-color:#dfe6ee!important}.tos-day .dow{color:#7c8797!important}.tos-day .hours{color:var(--v3-blue)!important}.tos-day.active{background:var(--v3-blue-soft)!important;border-color:#7fa2ff!important;box-shadow:0 0 0 2px rgba(47,107,255,.08) inset!important}.tos-day.today .date{text-decoration-color:var(--v3-blue)!important}.tos-entry-hours{color:var(--v3-blue)!important}.tos-entry-note{color:#5f6d80!important}.tos-empty{background:#fbfcfe!important;color:#7b8797!important;border-color:#ced7e2!important}.tos-status{background:#f4f6f8!important;color:#64748b!important;border-color:#dce3ea!important}.tos-status.submitted,.tos-status.approved{background:var(--v3-teal-soft)!important;color:#087b64!important;border-color:#bfe9dc!important}.tos-clock-total{background:var(--v3-blue-soft)!important;border-color:#c8d8ff!important}.tos-clock-total strong{color:var(--v3-blue)!important}.tos-lock-note{background:#f4f7ff!important;border-color:#dbe5ff!important}.tos-inline-action{color:var(--v3-blue)!important}
+.tos-sheet{background:rgba(15,23,42,.48)!important}.tos-sheet-panel{background:#fff!important;color:var(--v3-text)!important;border-color:var(--v3-line)!important;box-shadow:0 -18px 50px rgba(15,23,42,.18)!important}.tos-sheet-handle{background:#cbd5e1!important}.tos-sheet-head h3{color:var(--v3-text)!important}.tos-close{background:#f8fafc!important;color:#24324a!important;border-color:var(--v3-line)!important}.tos-form-error{background:#fff0f1!important;color:#b43f48!important;border-color:#efc2c6!important}.tos-delete{background:#fff1f2!important;color:#bd424b!important;border-color:#efc7ca!important}
+
+/* Schedule */
+.tos-schedule-shell,.tos-schedule-card,.tos-unscheduled,.tos-day-column,.tos-job-card{background:#fff!important;color:var(--v3-text)!important;border-color:var(--v3-line)!important}.tos-job-card strong,.tos-schedule-shell h2,.tos-schedule-shell h3{color:var(--v3-text)!important}.tos-job-card small,.tos-schedule-shell p{color:var(--v3-muted)!important}
+
+/* Team */
+.tos-rates-card{background:#fff!important;color:var(--v3-text)!important;border-color:var(--v3-line)!important}.tos-rate-row{background:#fbfcfe!important;border-color:var(--v3-line)!important}.tos-rate-person strong,.tos-rate-label{color:var(--v3-text)!important}.tos-rate-person small,.tos-rate-help,.tos-rate-note{color:var(--v3-muted)!important}.tos-rate-note{background:#f1f5ff!important;border-color:#dce6ff!important}.tos-rate-input{background:#fff!important;color:var(--v3-text)!important;border-color:var(--v3-line-strong)!important}
+
+/* Finance: keep positive money green, controls blue */
+[data-product-view='finance'] .money-row.total strong,[data-product-view='finance'] .row-total{color:var(--v3-teal)!important}
+
+/* Auth */
+.auth-shell{background:linear-gradient(180deg,#0b1220 0,#17233a 46%,#f3f6fb 46%)!important}.auth-card{background:#fff!important;color:var(--v3-text)!important;border-color:var(--v3-line)!important;box-shadow:0 28px 80px rgba(15,23,42,.22)!important}.auth-card h2{color:var(--v3-text)!important}.auth-card .sub{color:var(--v3-muted)!important}.auth-card .eyebrow{color:var(--v3-blue)!important}
+
+/* More sheet */
+.modern-more-panel{background:#fff!important;color:var(--v3-text)!important}.modern-more-title{color:var(--v3-text)!important}.modern-more-item{background:#f6f8fb!important;color:var(--v3-text)!important}.modern-more-item small{color:var(--v3-muted)!important}.modern-more-icon{background:var(--v3-blue-soft)!important;color:var(--v3-blue)!important}.modern-more-close{background:#fff!important;color:#223047!important;border-color:var(--v3-line)!important}.modern-more-handle{background:#cbd5e1!important}
+
+/* Make the Timesheets tab feel intentional */
+.bottom-nav [data-nav='timesheets'].active{background:rgba(47,107,255,.22)!important;color:#a9c0ff!important}
+
+@media(max-width:640px){
+  .app{background:linear-gradient(180deg,#eef3ff 0,#f7f9fc 190px,#f5f7fb 100%)!important}
+  .nav{font-size:9.5px!important}.nav b svg{width:20px!important;height:20px!important}
+  .bottom-nav{width:calc(100% - 18px)!important;bottom:max(7px,env(safe-area-inset-bottom))!important}
+  .tos-day{background:#f8fafc!important}.tos-sheet-panel{border-radius:26px 26px 0 0!important}
+}
