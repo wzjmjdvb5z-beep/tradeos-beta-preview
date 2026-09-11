@@ -4,7 +4,7 @@ This repository is a **workflow prototype**, not the production TradeOS applicat
 
 ## Security status
 
-The public GitHub Pages preview is now deliberately **local-only**:
+The public GitHub Pages preview is deliberately **local-only**:
 
 - no account sign-in
 - no bearer-token persistence
@@ -23,3 +23,5 @@ This public preview exists only to validate the core workflow with demo data:
 `enquiry → quote → job → timesheet → approval → job profit`
 
 See `SECURITY.md` for the security boundary and production requirements.
+
+_Last redeploy trigger: secured preview._
