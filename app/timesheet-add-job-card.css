@@ -1,0 +1,12 @@
+.tos-add-original-hidden{display:none!important}
+.tos-add-job-card{width:100%;margin-top:14px;border:1px solid #d7e2ef;background:#fff;border-radius:18px;padding:16px;display:flex;align-items:center;gap:13px;text-align:left;box-shadow:0 6px 20px rgba(15,23,42,.05);color:#0f172a;-webkit-tap-highlight-color:transparent}
+.tos-add-job-card:active{transform:scale(.99)}
+.tos-add-job-icon{width:42px;height:42px;border-radius:13px;background:#eaf2ff;color:#2563eb;display:grid;place-items:center;font-size:28px;line-height:1;font-weight:400;flex:0 0 auto}
+.tos-add-job-copy{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
+.tos-add-job-copy strong{font-size:16px;line-height:1.2;font-weight:750;color:#0f172a}
+.tos-add-job-copy small{font-size:13px;line-height:1.35;color:#64748b}
+.tos-add-job-arrow{font-size:28px;line-height:1;color:#94a3b8;flex:0 0 auto;margin-left:4px}
+.tos-add-job-card:hover{border-color:#bfd2eb}
+.tos-add-job-card.is-locked,.tos-add-job-card:disabled{opacity:.58;cursor:not-allowed;box-shadow:none}
+.tos-add-job-card.is-locked .tos-add-job-icon{background:#f1f5f9;color:#94a3b8}
+@media(max-width:520px){.tos-add-job-card{padding:15px;border-radius:16px}.tos-add-job-icon{width:40px;height:40px;border-radius:12px}.tos-add-job-copy strong{font-size:15px}.tos-add-job-copy small{font-size:12.5px}}
