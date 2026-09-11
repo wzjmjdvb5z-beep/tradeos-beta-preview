@@ -45,12 +45,12 @@
     const jobs=getJobs();
     if(running){
       const title=jobs.find(j=>j.id===running.job_id)?.title||'Current job';
-      card.innerHTML=`<div class="tos-live-head"><div><p class="eyebrow">LIVE TIMER</p><h3>Timer running</h3><p>Your timer stays active even if you leave this page.</p></div><span class="tos-live-dot running"></span></div><div class="tos-running-card"><div class="tos-running-job"><div><strong>${esc(title)}</strong><small>Started ${esc(trimTime(running.start_time))} · ${esc(longDate(running.work_date))}</small></div></div><div class="tos-elapsed" id="tos-elapsed">${elapsedText(running.started_at)}</div><div class="tos-running-actions"><button class="tos-cancel-timer" id="tos-cancel-live">Cancel timer</button><button class="tos-stop-btn" id="tos-stop-live">Stop timer</button></div></div>`;
+      card.innerHTML=`<div class="tos-live-head"><div><p class="eyebrow">LIVE TIMER</p><h3>Timer running</h3><p>Your timer stays active even if you leave this page.</p></div><span class="tos-live-dot running"></span></div><div class="tos-running-card"><div class="tos-running-job"><div><strong>${esc(title)}</strong><small>Started ${esc(trimTime(running.start_time))} · ${esc(longDate(running.work_date))}</small></div></div><div class="tos-elapsed" id="tos-elapsed">${elapsedText(running.started_at)}</div><div id="tos-live-message"></div><div class="tos-running-actions"><button class="tos-cancel-timer" id="tos-cancel-live">Cancel timer</button><button class="tos-stop-btn" id="tos-stop-live">Stop timer</button></div></div>`;
       card.querySelector('#tos-stop-live')?.addEventListener('click',()=>openStopSheet(title));
-      card.querySelector('#tos-cancel-live')?.addEventListener('click',cancelTimer);
+      card.querySelector('#tos-cancel-live')?.addEventListener('click',openCancelSheet);
       interval=setInterval(()=>{const el=document.getElementById('tos-elapsed');if(el)el.textContent=elapsedText(running.started_at)},1000);
     }else{
-      card.innerHTML=`<div class="tos-live-head"><div><p class="eyebrow">LIVE TIMER</p><h3>Start a job timer</h3><p>Pick the job and TradeOS will clock the time for you.</p></div><span class="tos-live-dot"></span></div>${jobs.length?`<div class="tos-live-form"><div class="tos-live-field"><label>Job</label><select id="tos-timer-job">${jobs.map(j=>`<option value="${esc(j.id)}">${esc(j.title)}</option>`).join('')}</select></div><button class="tos-timer-start" id="tos-start-live">Start timer</button></div><div class="tos-live-note">Live timers always record today. Existing manual time for the same job/day is protected from being overwritten.</div>`:`<div class="tos-live-note">Add or assign a job before starting a timer.</div>`}`;
+      card.innerHTML=`<div class="tos-live-head"><div><p class="eyebrow">LIVE TIMER</p><h3>Start a job timer</h3><p>Pick the job and TradeOS will clock the time for you.</p></div><span class="tos-live-dot"></span></div>${jobs.length?`<div class="tos-live-form"><div class="tos-live-field"><label>Job</label><select id="tos-timer-job">${jobs.map(j=>`<option value="${esc(j.id)}">${esc(j.title)}</option>`).join('')}</select></div><button class="tos-timer-start" id="tos-start-live">Start timer</button></div><div id="tos-live-message"></div><div class="tos-live-note">Live timers always record today. Submitted or approved weeks cannot start a new timer.</div>`:`<div class="tos-live-note">Add or assign a job before starting a timer.</div>`}`;
       card.querySelector('#tos-start-live')?.addEventListener('click',startTimer);
     }
   }
@@ -68,6 +68,7 @@
     const btn=document.querySelector('#tos-start-live');
     const jobId=document.querySelector('#tos-timer-job')?.value;
     if(!jobId)return;
+    clearLiveMessage();
     const now=new Date();
     const workDate=localIso(now),weekStart=mondayIso(now),startLocal=localTime(now);
     try{
@@ -77,39 +78,109 @@
       if(error)throw error;
       running={id:data,company_id:companyId,job_id:jobId,week_start:weekStart,work_date:workDate,started_at:new Date().toISOString(),start_time:startLocal,status:'running'};
       const card=document.querySelector('.tos-live-timer');if(card)render(card);
-    }catch(err){alert(err?.message||'Could not start the timer.');if(btn){btn.disabled=false;btn.textContent='Start timer';}}
+    }catch(err){
+      showLiveMessage(friendlyError(err),'error');
+      if(btn){btn.disabled=false;btn.textContent='Start timer';}
+    }
   }
   function openStopSheet(title){
     document.querySelector('.tos-timer-sheet')?.remove();
     const overlay=document.createElement('div');
     overlay.className='tos-timer-sheet';
-    overlay.innerHTML=`<div class="tos-timer-panel"><div class="tos-timer-handle"></div><h3>Stop timer</h3><p class="sub">${esc(title)} · started ${esc(trimTime(running.start_time))}</p><div class="tos-live-field"><label>Break</label><select id="tos-stop-break"><option value="0">No break</option><option value="15">15 minutes</option><option value="30">30 minutes</option><option value="45">45 minutes</option><option value="60">1 hour</option><option value="90">1 hour 30 minutes</option></select></div><div class="tos-timer-summary"><span>Elapsed</span><strong id="tos-stop-elapsed">${elapsedText(running.started_at)}</strong></div><div class="tos-timer-panel-actions"><button class="tos-timer-back" id="tos-stop-back">Keep running</button><button class="tos-timer-save" id="tos-stop-save">Stop & save</button></div></div>`;
+    overlay.innerHTML=`<div class="tos-timer-panel"><div class="tos-timer-handle"></div><h3>Stop timer</h3><p class="sub">${esc(title)} · started ${esc(trimTime(running.start_time))}</p><div class="tos-live-field"><label>Break</label><select id="tos-stop-break"><option value="0">No break</option><option value="15">15 minutes</option><option value="30">30 minutes</option><option value="45">45 minutes</option><option value="60">1 hour</option><option value="90">1 hour 30 minutes</option></select></div><div class="tos-timer-summary"><span>Elapsed</span><strong id="tos-stop-elapsed">${elapsedText(running.started_at)}</strong></div><div id="tos-stop-message"></div><div class="tos-timer-panel-actions"><button class="tos-timer-back" id="tos-stop-back">Keep running</button><button class="tos-timer-save" id="tos-stop-save">Stop & save</button></div></div>`;
     document.body.appendChild(overlay);
     const tick=setInterval(()=>{const el=overlay.querySelector('#tos-stop-elapsed');if(el)el.textContent=elapsedText(running.started_at)},1000);
     const close=()=>{clearInterval(tick);overlay.remove()};
     overlay.addEventListener('click',e=>{if(e.target===overlay)close()});
     overlay.querySelector('#tos-stop-back')?.addEventListener('click',close);
-    overlay.querySelector('#tos-stop-save')?.addEventListener('click',async()=>{
-      const save=overlay.querySelector('#tos-stop-save');const breakMinutes=Number(overlay.querySelector('#tos-stop-break')?.value||0);const endLocal=localTime(new Date());
+    overlay.querySelector('#tos-stop-save')?.addEventListener('click',()=>finishTimer(overlay,tick));
+  }
+  async function finishTimer(overlay,tick){
+    const save=overlay.querySelector('#tos-stop-save');
+    const breakMinutes=Number(overlay.querySelector('#tos-stop-break')?.value||0);
+    const message=overlay.querySelector('#tos-stop-message');
+    if(message)message.innerHTML='';
+    try{
+      if(save){save.disabled=true;save.textContent='Saving…';}
+      const {error}=await client.rpc('stop_job_timer',{target_timer:running.id,end_local:localTime(new Date()),break_mins:breakMinutes});
+      if(error)throw error;
+      clearInterval(tick);overlay.remove();running=null;stopTick();
+      setTimeout(()=>location.reload(),120);
+    }catch(err){
+      if(save){save.disabled=false;save.textContent='Stop & save';}
+      if(isLockedError(err)) await renderLockedWeekAction(overlay,tick);
+      else if(message) message.innerHTML=`<div class="tos-timer-error"><strong>Couldn’t save that time</strong><span>${esc(friendlyError(err))}</span></div>`;
+    }
+  }
+  async function renderLockedWeekAction(overlay,tick){
+    const message=overlay.querySelector('#tos-stop-message');
+    if(!message)return;
+    const access=await getWeekAccess();
+    if(access.canReopen&&access.sheetId){
+      message.innerHTML=`<div class="tos-timer-error soft"><strong>This week is already locked</strong><span>It was submitted or approved. Reopen it first, then TradeOS can save this timer.</span><button class="tos-reopen-btn" id="tos-reopen-save">Reopen week & save time</button></div>`;
+      overlay.querySelector('#tos-reopen-save')?.addEventListener('click',async e=>{
+        const btn=e.currentTarget;
+        try{
+          btn.disabled=true;btn.textContent='Reopening…';
+          const {error}=await client.rpc('reopen_weekly_timesheet',{target_weekly_timesheet:access.sheetId});
+          if(error)throw error;
+          message.innerHTML=`<div class="tos-timer-success">Week reopened. Saving your timer…</div>`;
+          await finishTimer(overlay,tick);
+        }catch(err){
+          btn.disabled=false;btn.textContent='Reopen week & save time';
+          message.innerHTML=`<div class="tos-timer-error"><strong>Couldn’t reopen the week</strong><span>${esc(friendlyError(err))}</span></div>`;
+        }
+      });
+    }else{
+      message.innerHTML=`<div class="tos-timer-error soft"><strong>This week has already been submitted</strong><span>Ask a manager to reopen it before adding more time. Your live timer has not been lost.</span></div>`;
+    }
+  }
+  async function getWeekAccess(){
+    try{
+      const {data:{user}}=await client.auth.getUser();
+      if(!user||!running)return{canReopen:false,sheetId:null};
+      const [memberResult,sheetResult]=await Promise.all([
+        client.from('company_members').select('role').eq('company_id',running.company_id).eq('user_id',user.id).eq('active',true).maybeSingle(),
+        client.from('weekly_timesheets').select('id,status').eq('company_id',running.company_id).eq('user_id',user.id).eq('week_start',running.week_start).maybeSingle()
+      ]);
+      const role=memberResult.data?.role;
+      return{canReopen:['owner','admin','manager'].includes(role),sheetId:sheetResult.data?.id||null,status:sheetResult.data?.status||null};
+    }catch{return{canReopen:false,sheetId:null};}
+  }
+  function openCancelSheet(){
+    if(!running)return;
+    document.querySelector('.tos-timer-sheet')?.remove();
+    const overlay=document.createElement('div');
+    overlay.className='tos-timer-sheet';
+    overlay.innerHTML=`<div class="tos-timer-panel"><div class="tos-timer-handle"></div><h3>Cancel timer?</h3><p class="sub">This removes the running timer without adding any time to your timesheet.</p><div id="tos-cancel-message"></div><div class="tos-timer-panel-actions"><button class="tos-timer-back" id="tos-cancel-back">Keep running</button><button class="tos-timer-danger" id="tos-cancel-confirm">Cancel timer</button></div></div>`;
+    document.body.appendChild(overlay);
+    const close=()=>overlay.remove();
+    overlay.addEventListener('click',e=>{if(e.target===overlay)close()});
+    overlay.querySelector('#tos-cancel-back')?.addEventListener('click',close);
+    overlay.querySelector('#tos-cancel-confirm')?.addEventListener('click',async e=>{
+      const btn=e.currentTarget;
       try{
-        save.disabled=true;save.textContent='Saving…';
-        const {error}=await client.rpc('stop_job_timer',{target_timer:running.id,end_local:endLocal,break_mins:breakMinutes});
+        btn.disabled=true;btn.textContent='Cancelling…';
+        const {error}=await client.rpc('cancel_job_timer',{target_timer:running.id});
         if(error)throw error;
-        clearInterval(tick);overlay.remove();running=null;stopTick();
-        setTimeout(()=>location.reload(),120);
-      }catch(err){alert(err?.message||'Could not stop the timer.');save.disabled=false;save.textContent='Stop & save';}
+        overlay.remove();running=null;stopTick();const card=document.querySelector('.tos-live-timer');if(card)render(card);
+      }catch(err){
+        btn.disabled=false;btn.textContent='Cancel timer';
+        const m=overlay.querySelector('#tos-cancel-message');if(m)m.innerHTML=`<div class="tos-timer-error"><strong>Couldn’t cancel the timer</strong><span>${esc(friendlyError(err))}</span></div>`;
+      }
     });
   }
-  async function cancelTimer(){
-    if(!running)return;
-    if(!confirm('Cancel this timer without adding it to the timesheet?'))return;
-    const btn=document.querySelector('#tos-cancel-live');
-    try{
-      if(btn){btn.disabled=true;btn.textContent='Cancelling…';}
-      const {error}=await client.rpc('cancel_job_timer',{target_timer:running.id});
-      if(error)throw error;
-      running=null;stopTick();const card=document.querySelector('.tos-live-timer');if(card)render(card);
-    }catch(err){alert(err?.message||'Could not cancel the timer.');if(btn){btn.disabled=false;btn.textContent='Cancel timer';}}
+  function showLiveMessage(text,type='error'){
+    const el=document.querySelector('#tos-live-message');
+    if(!el)return;
+    el.innerHTML=`<div class="tos-live-message ${type}">${esc(text)}</div>`;
+  }
+  function clearLiveMessage(){const el=document.querySelector('#tos-live-message');if(el)el.innerHTML='';}
+  function isLockedError(err){return /locked|submitted|approved/i.test(String(err?.message||''));}
+  function friendlyError(err){
+    const msg=String(err?.message||'Something went wrong.');
+    if(isLockedError(err))return 'This week has already been submitted or approved.';
+    return msg;
   }
   async function companyForJob(jobId){const {data,error}=await client.from('jobs').select('company_id').eq('id',jobId).single();if(error)throw error;return data.company_id;}
   function elapsedText(startedAt){const ms=Math.max(0,Date.now()-new Date(startedAt).getTime());const s=Math.floor(ms/1000),h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60;return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;}
