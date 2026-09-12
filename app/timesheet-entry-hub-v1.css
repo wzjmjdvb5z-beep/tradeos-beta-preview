@@ -1,0 +1,10 @@
+.tos-ts-hero{flex-wrap:wrap}
+.tos-time-entry-hub{width:100%;flex:1 0 100%;margin-top:10px;padding:16px;border:1px solid #d7e1ee;border-radius:22px;background:#fff;box-shadow:0 12px 30px rgba(15,23,42,.06);display:grid;gap:12px;color:#142033}
+.tos-time-entry-hub-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.tos-time-entry-hub-head>div{min-width:0}.tos-time-entry-kicker{display:block;font-size:11px;font-weight:900;letter-spacing:.12em;color:#3971f4;margin-bottom:4px}.tos-time-entry-hub-head strong{display:block;font-size:19px;line-height:1.2}.tos-time-entry-hub-head small{display:block;margin-top:4px;color:#6f7f95;line-height:1.35;font-size:13px}
+.tos-time-entry-live{display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;padding:7px 10px;border-radius:999px;background:#eefcf6;color:#087f5b;font-size:11px;font-weight:900}.tos-time-entry-live i{width:8px;height:8px;border-radius:50%;background:#12b886;box-shadow:0 0 0 4px rgba(18,184,134,.12)}
+.tos-time-entry-job{display:grid;gap:6px}.tos-time-entry-job span{font-size:12px;font-weight:900;color:#42526a}.tos-time-entry-job select{width:100%;min-height:50px;border:1px solid #ccd8e6;border-radius:14px;background:#f9fbfd;color:#142033;padding:0 13px;font-size:16px;font-weight:800}
+.tos-time-entry-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}.tos-time-entry-actions button{min-height:50px;border-radius:14px;font-size:15px;font-weight:950;padding:0 12px}.tos-hub-start,.tos-hub-stop{border:0;background:#2f6df6;color:#fff}.tos-hub-manual{border:1px solid #ccd8e6;background:#f7f9fc;color:#142033}.tos-time-entry-actions button:disabled{opacity:.45}
+.tos-time-entry-hub-ready>.tos-live-timer-v2{display:none!important}.tos-time-entry-hub-ready .tos-day-title #tos-add{display:none!important}
+@media(max-width:520px){.tos-time-entry-hub{padding:14px;border-radius:20px}.tos-time-entry-actions{grid-template-columns:1fr 1fr}.tos-time-entry-actions button{font-size:14px}.tos-time-entry-hub-head strong{font-size:18px}}
+@media(max-width:360px){.tos-time-entry-actions{grid-template-columns:1fr}.tos-time-entry-actions button{width:100%}}
