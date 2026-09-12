@@ -15,12 +15,28 @@
     return membership&&companyId?{user,companyId,membership}:null;
   }
   async function mountMore(){
-    const list=document.querySelector('.modern-more-list');if(!list||list.querySelector('[data-business-profile]'))return;
-    const ctx=await context();if(!ctx||!managerRoles.has(ctx.membership.role)||!list.isConnected)return;
-    const b=document.createElement('button');b.type='button';b.className='modern-more-item';b.dataset.businessProfile='1';
-    b.innerHTML=`<span class="modern-more-icon">${icon}</span><span><strong>Business profile</strong><small>Branding, contact details, terms & payment details</small></span>`;
-    b.addEventListener('click',()=>{document.querySelector('.modern-more-sheet')?.remove();openProfile();});
-    const signout=list.querySelector('[data-modern-signout]');list.insertBefore(b,signout||null);
+    const list=document.querySelector('.modern-more-list');if(!list)return;
+
+    // Clean up any duplicates left behind by an older cached build.
+    const existing=[...list.querySelectorAll('[data-business-profile]')];
+    if(existing.length>1)existing.slice(1).forEach(x=>x.remove());
+    if(existing.length)return;
+
+    // Lock this specific More sheet before the async account lookup. Without this,
+    // multiple MutationObserver passes can all get through and insert duplicates.
+    if(list.dataset.businessProfileMounting==='1')return;
+    list.dataset.businessProfileMounting='1';
+    try{
+      const ctx=await context();
+      if(!ctx||!managerRoles.has(ctx.membership.role)||!list.isConnected)return;
+      if(list.querySelector('[data-business-profile]'))return;
+      const b=document.createElement('button');b.type='button';b.className='modern-more-item';b.dataset.businessProfile='1';
+      b.innerHTML=`<span class="modern-more-icon">${icon}</span><span><strong>Business profile</strong><small>Branding, contact details, terms & payment details</small></span>`;
+      b.addEventListener('click',()=>{document.querySelector('.modern-more-sheet')?.remove();openProfile();});
+      const signout=list.querySelector('[data-modern-signout]');list.insertBefore(b,signout||null);
+    }finally{
+      delete list.dataset.businessProfileMounting;
+    }
   }
   async function openProfile(){
     document.querySelector('.tos-profile-sheet')?.remove();
