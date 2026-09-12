@@ -31,26 +31,16 @@ jobs:
       APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
       APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
       APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
-      IOS_DISTRIBUTION_CERT_P12_BASE64: ${{ secrets.IOS_DISTRIBUTION_CERT_P12_BASE64 }}
-      IOS_DISTRIBUTION_CERT_PASSWORD: ${{ secrets.IOS_DISTRIBUTION_CERT_PASSWORD }}
-      IOS_APP_STORE_PROFILE_BASE64: ${{ secrets.IOS_APP_STORE_PROFILE_BASE64 }}
+
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Verify release secrets are configured
+      - name: Verify Apple release secrets
         shell: bash
         run: |
           set -euo pipefail
-          required=(
-            APP_STORE_CONNECT_KEY_ID
-            APP_STORE_CONNECT_ISSUER_ID
-            APP_STORE_CONNECT_PRIVATE_KEY
-            IOS_DISTRIBUTION_CERT_P12_BASE64
-            IOS_DISTRIBUTION_CERT_PASSWORD
-            IOS_APP_STORE_PROFILE_BASE64
-          )
-          for name in "${required[@]}"; do
+          for name in APP_STORE_CONNECT_KEY_ID APP_STORE_CONNECT_ISSUER_ID APP_STORE_CONNECT_PRIVATE_KEY; do
             if [ -z "${!name:-}" ]; then
               echo "Missing required GitHub Actions secret: $name" >&2
               exit 1
@@ -83,51 +73,18 @@ jobs:
           grep -q 'data-tradeos-billing' mobile-web/app/mobile-native.js
           grep -q "PRODUCT_BUNDLE_IDENTIFIER = ${APP_BUNDLE_ID};" ios/App/App.xcodeproj/project.pbxproj
 
-      - name: Install Apple distribution signing assets
-        shell: bash
-        run: |
-          set -euo pipefail
-          KEYCHAIN="$RUNNER_TEMP/tradeos-build.keychain-db"
-          KEYCHAIN_PASSWORD="$(openssl rand -hex 24)"
-          CERT_PATH="$RUNNER_TEMP/distribution.p12"
-          PROFILE_PATH="$RUNNER_TEMP/appstore.mobileprovision"
-
-          echo "$IOS_DISTRIBUTION_CERT_P12_BASE64" | base64 --decode > "$CERT_PATH"
-          echo "$IOS_APP_STORE_PROFILE_BASE64" | base64 --decode > "$PROFILE_PATH"
-
-          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
-          security set-keychain-settings -lut 21600 "$KEYCHAIN"
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
-          security import "$CERT_PATH" -P "$IOS_DISTRIBUTION_CERT_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN"
-          security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
-          security list-keychains -d user -s "$KEYCHAIN" login.keychain-db
-
-          security cms -D -i "$PROFILE_PATH" > "$RUNNER_TEMP/profile.plist"
-          PROFILE_UUID="$(/usr/libexec/PlistBuddy -c 'Print :UUID' "$RUNNER_TEMP/profile.plist")"
-          PROFILE_NAME="$(/usr/libexec/PlistBuddy -c 'Print :Name' "$RUNNER_TEMP/profile.plist")"
-          PROFILE_TEAM="$(/usr/libexec/PlistBuddy -c 'Print :TeamIdentifier:0' "$RUNNER_TEMP/profile.plist")"
-          PROFILE_APP_ID="$(/usr/libexec/PlistBuddy -c 'Print :Entitlements:application-identifier' "$RUNNER_TEMP/profile.plist")"
-
-          if [ "$PROFILE_TEAM" != "$APPLE_TEAM_ID" ]; then
-            echo 'Provisioning profile belongs to the wrong Apple team.' >&2
-            exit 1
-          fi
-          if [ "$PROFILE_APP_ID" != "$APPLE_TEAM_ID.$APP_BUNDLE_ID" ]; then
-            echo 'Provisioning profile does not match the TradeOS bundle identifier.' >&2
-            exit 1
-          fi
-
-          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
-          cp "$PROFILE_PATH" "$HOME/Library/MobileDevice/Provisioning Profiles/$PROFILE_UUID.mobileprovision"
-          echo "PROFILE_NAME=$PROFILE_NAME" >> "$GITHUB_ENV"
-
       - name: Install App Store Connect API key
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p "$HOME/.appstoreconnect/private_keys"
-          printf '%s' "$APP_STORE_CONNECT_PRIVATE_KEY" > "$HOME/.appstoreconnect/private_keys/AuthKey_${APP_STORE_CONNECT_KEY_ID}.p8"
-          chmod 600 "$HOME/.appstoreconnect/private_keys/AuthKey_${APP_STORE_CONNECT_KEY_ID}.p8"
+          KEY_DIR="$HOME/.appstoreconnect/private_keys"
+          KEY_PATH="$KEY_DIR/AuthKey_${APP_STORE_CONNECT_KEY_ID}.p8"
+          mkdir -p "$KEY_DIR"
+          printf '%s' "$APP_STORE_CONNECT_PRIVATE_KEY" > "$KEY_PATH"
+          chmod 600 "$KEY_PATH"
+          grep -q 'BEGIN PRIVATE KEY' "$KEY_PATH"
+          grep -q 'END PRIVATE KEY' "$KEY_PATH"
+          echo "APPLE_API_KEY_PATH=$KEY_PATH" >> "$GITHUB_ENV"
 
       - name: Resolve release version
         shell: bash
@@ -140,26 +97,35 @@ jobs:
             echo 'Build number must be numeric.' >&2
             exit 1
           fi
+          if ! [[ "$VERSION" =~ ^[0-9]+([.][0-9]+){1,2}$ ]]; then
+            echo 'Marketing version must look like 1.0 or 1.0.0.' >&2
+            exit 1
+          fi
           echo "MARKETING_VERSION=$VERSION" >> "$GITHUB_ENV"
           echo "BUILD_NUMBER=$BUILD" >> "$GITHUB_ENV"
 
-      - name: Archive signed iOS app
+      - name: Archive signed iOS app with automatic signing
+        shell: bash
         run: |
+          set -euo pipefail
           xcodebuild \
             -project ios/App/App.xcodeproj \
             -scheme App \
             -configuration Release \
             -destination 'generic/platform=iOS' \
             -archivePath "$RUNNER_TEMP/TradeOS.xcarchive" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$APPLE_API_KEY_PATH" \
+            -authenticationKeyID "$APP_STORE_CONNECT_KEY_ID" \
+            -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID" \
             DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
             PRODUCT_BUNDLE_IDENTIFIER="$APP_BUNDLE_ID" \
             MARKETING_VERSION="$MARKETING_VERSION" \
             CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
-            CODE_SIGN_STYLE=Manual \
-            PROVISIONING_PROFILE_SPECIFIER="$PROFILE_NAME" \
+            CODE_SIGN_STYLE=Automatic \
             archive
 
-      - name: Export App Store IPA
+      - name: Export App Store IPA with automatic signing
         shell: bash
         run: |
           set -euo pipefail
@@ -169,11 +135,8 @@ jobs:
           <plist version="1.0"><dict>
             <key>method</key><string>app-store-connect</string>
             <key>destination</key><string>export</string>
-            <key>signingStyle</key><string>manual</string>
+            <key>signingStyle</key><string>automatic</string>
             <key>teamID</key><string>${APPLE_TEAM_ID}</string>
-            <key>provisioningProfiles</key><dict>
-              <key>${APP_BUNDLE_ID}</key><string>${PROFILE_NAME}</string>
-            </dict>
             <key>stripSwiftSymbols</key><true/>
             <key>uploadSymbols</key><true/>
           </dict></plist>
@@ -183,14 +146,20 @@ jobs:
             -exportArchive \
             -archivePath "$RUNNER_TEMP/TradeOS.xcarchive" \
             -exportPath "$RUNNER_TEMP/export" \
-            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist"
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$APPLE_API_KEY_PATH" \
+            -authenticationKeyID "$APP_STORE_CONNECT_KEY_ID" \
+            -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID"
 
           IPA="$(find "$RUNNER_TEMP/export" -maxdepth 1 -name '*.ipa' -print -quit)"
           test -n "$IPA"
           echo "IPA_PATH=$IPA" >> "$GITHUB_ENV"
 
       - name: Validate with App Store Connect
+        shell: bash
         run: |
+          set -euo pipefail
           xcrun altool --validate-app \
             --file "$IPA_PATH" \
             --type ios \
@@ -198,7 +167,9 @@ jobs:
             --apiIssuer "$APP_STORE_CONNECT_ISSUER_ID"
 
       - name: Upload to TestFlight
+        shell: bash
         run: |
+          set -euo pipefail
           xcrun altool --upload-app \
             --file "$IPA_PATH" \
             --type ios \
