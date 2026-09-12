@@ -1,2 +1,3 @@
 body.tos-com-sheet-open{overflow:hidden}
 .tos-job-note-sheet,.tos-job-note-confirm,.tos-job-photo-viewer{display:none!important;pointer-events:none!important}
+body:not(:has(.bottom-nav)) .tos-br-fab{display:none!important}
