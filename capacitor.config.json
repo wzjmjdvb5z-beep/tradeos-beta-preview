@@ -1,0 +1,10 @@
+{
+  "appId": "uk.co.benjaminchurchill.fieldservice",
+  "appName": "TradeOS Beta",
+  "webDir": "mobile-web",
+  "bundledWebRuntime": false,
+  "ios": {
+    "contentInset": "automatic",
+    "preferredContentMode": "mobile"
+  }
+}
