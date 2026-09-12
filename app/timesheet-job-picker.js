@@ -6,10 +6,12 @@
 
   let observer=null;
   let enhancing=false;
+  let scrollLock=null;
 
   function start(){
     observer=new MutationObserver(()=>enhance());
     observer.observe(document.documentElement,{childList:true,subtree:true});
+    window.addEventListener('pageshow',()=>{if(!document.querySelector('.tos-job-picker-sheet'))forceUnlockBackground();});
     enhance();
   }
 
@@ -49,8 +51,49 @@
     return select?.selectedOptions?.[0]?.textContent?.trim()||'Choose a job';
   }
 
+  function lockBackground(){
+    if(scrollLock)return;
+    const body=document.body,html=document.documentElement;
+    const y=window.scrollY||html.scrollTop||0;
+    scrollLock={
+      y,
+      body:{position:body.style.position,top:body.style.top,left:body.style.left,right:body.style.right,width:body.style.width,overflow:body.style.overflow},
+      htmlOverflow:html.style.overflow
+    };
+    body.classList.add('tos-job-picker-open');
+    body.style.position='fixed';
+    body.style.top=`-${y}px`;
+    body.style.left='0';
+    body.style.right='0';
+    body.style.width='100%';
+    body.style.overflow='hidden';
+    html.style.overflow='hidden';
+  }
+
+  function unlockBackground(){
+    if(!scrollLock)return;
+    const body=document.body,html=document.documentElement;
+    const saved=scrollLock;
+    scrollLock=null;
+    body.style.position=saved.body.position;
+    body.style.top=saved.body.top;
+    body.style.left=saved.body.left;
+    body.style.right=saved.body.right;
+    body.style.width=saved.body.width;
+    body.style.overflow=saved.body.overflow;
+    html.style.overflow=saved.htmlOverflow;
+    body.classList.remove('tos-job-picker-open');
+    requestAnimationFrame(()=>window.scrollTo(0,saved.y));
+  }
+
+  function forceUnlockBackground(){
+    if(scrollLock)unlockBackground();
+    else document.body.classList.remove('tos-job-picker-open');
+  }
+
   async function openPicker(select,button){
-    document.querySelector('.tos-job-picker-sheet')?.remove();
+    const existing=document.querySelector('.tos-job-picker-sheet');
+    if(existing){existing.remove();forceUnlockBackground();}
     const overlay=document.createElement('div');
     overlay.className='tos-job-picker-sheet';
     overlay.innerHTML=`<div class="tos-job-picker-panel" role="dialog" aria-modal="true" aria-label="Choose job">
@@ -60,10 +103,17 @@
       <div class="tos-job-picker-results"><div class="tos-job-picker-loading">Loading jobs…</div></div>
     </div>`;
     document.body.appendChild(overlay);
+    lockBackground();
     const panel=overlay.querySelector('.tos-job-picker-panel');
     const search=overlay.querySelector('#tos-job-search');
     const results=overlay.querySelector('.tos-job-picker-results');
-    const close=()=>overlay.remove();
+    let closed=false;
+    const close=()=>{
+      if(closed)return;
+      closed=true;
+      overlay.remove();
+      unlockBackground();
+    };
     overlay.addEventListener('click',e=>{if(e.target===overlay)close();});
     overlay.querySelector('.tos-job-picker-close')?.addEventListener('click',close);
 
@@ -79,7 +129,7 @@
     }
 
     search.addEventListener('input',()=>renderResults(results,jobs,select.value,close,select,button,search.value));
-    setTimeout(()=>search.focus(),80);
+    setTimeout(()=>{if(!closed&&overlay.isConnected)search.focus();},80);
   }
 
   async function loadJobs(select){
@@ -162,7 +212,7 @@
     return new Intl.DateTimeFormat('en-GB',{day:'numeric',month:'short'}).format(new Date(y,m-1,d,12));
   }
   function prettyStatus(v){return String(v||'').replace(/[_-]+/g,' ').replace(/\b\w/g,c=>c.toUpperCase());}
-  function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+  function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));}
 
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
