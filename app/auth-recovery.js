@@ -9,7 +9,16 @@
   function message(text,bad=false){
     let box=document.getElementById('recovery-message');
     if(!box){box=document.createElement('div');box.id='recovery-message';const form=document.getElementById('auth');form?.insertAdjacentElement('afterend',box);}
-    box.className=bad?'error':'success';box.textContent=text;
+    box.className=bad?'error':'success';box.textContent=String(text||'');
+  }
+  function recoveryStatus(text,bad=true){
+    const status=document.getElementById('recovery-status');
+    if(!status)return;
+    status.replaceChildren();
+    const box=document.createElement('div');
+    box.className=bad?'error':'success';
+    box.textContent=String(text||'');
+    status.appendChild(box);
   }
   function enhanceAuth(){
     const form=document.getElementById('auth');
@@ -30,16 +39,15 @@
     });
   }
   function showRecovery(){
-    root.innerHTML=`<div class="auth-shell"><section class="card auth-card"><p class="eyebrow">TRADEOS ACCOUNT</p><h2>Choose a new password</h2><p class="sub">Use at least 8 characters.</p><form id="password-recovery"><div class="field"><label>New password</label><input name="password" type="password" minlength="8" required></div><div class="field"><label>Confirm password</label><input name="confirm" type="password" minlength="8" required></div><button class="btn" type="submit">Save new password</button></form><div id="recovery-status"></div></section></div>`;
+    root.innerHTML=`<div class="auth-shell"><section class="card auth-card"><p class="eyebrow">TRADEOS ACCOUNT</p><h2>Choose a new password</h2><p class="sub">Use at least 8 characters.</p><form id="password-recovery"><div class="field"><label>New password</label><input name="password" type="password" minlength="8" autocomplete="new-password" required></div><div class="field"><label>Confirm password</label><input name="confirm" type="password" minlength="8" autocomplete="new-password" required></div><button class="btn" type="submit">Save new password</button></form><div id="recovery-status" aria-live="polite"></div></section></div>`;
     document.getElementById('password-recovery').addEventListener('submit',async e=>{
       e.preventDefault();
       const f=new FormData(e.currentTarget);const password=String(f.get('password')||''),confirm=String(f.get('confirm')||'');
-      const status=document.getElementById('recovery-status');
-      if(password.length<8){status.innerHTML='<div class="error">Password must be at least 8 characters.</div>';return;}
-      if(password!==confirm){status.innerHTML='<div class="error">Passwords do not match.</div>';return;}
+      if(password.length<8){recoveryStatus('Password must be at least 8 characters.');return;}
+      if(password!==confirm){recoveryStatus('Passwords do not match.');return;}
       const button=e.currentTarget.querySelector('button');button.disabled=true;button.textContent='Saving…';
       const {error}=await authClient.auth.updateUser({password});
-      if(error){status.innerHTML=`<div class="error">${String(error.message||'Could not update password')}</div>`;button.disabled=false;button.textContent='Save new password';return;}
+      if(error){recoveryStatus(error.message||'Could not update password.');button.disabled=false;button.textContent='Save new password';return;}
       await authClient.auth.signOut();
       history.replaceState({},'',cleanUrl());
       location.reload();
