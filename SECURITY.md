@@ -1,34 +1,61 @@
-# TradeOS beta preview security
+# TradeOS security
 
-## Scope
+## Current launch architecture
 
-This public repository is a workflow prototype only. It must not be used with real customer, employee, payroll, financial or commercially sensitive data.
+TradeOS is a static web client backed by Supabase Auth, Postgres, Storage and RPC functions. The browser bundle contains a Supabase **publishable** key only. Publishable keys are intended for public clients and are not privileged secrets.
 
-## Current controls
+Never commit or expose a Supabase secret key, `service_role` key, database password, private API credential or payment-provider secret in this repository or any browser-delivered asset.
 
-The GitHub Pages build is intentionally local-only. Authentication and cloud sync are disabled. The page CSP blocks network connections (`connect-src 'none'`) and JavaScript is loaded only from this origin.
+## Data isolation and authorisation
 
-On load, the beta removes the legacy `tradeos_beta_session` key from both `localStorage` and `sessionStorage`.
+- Row Level Security is enabled on every application table exposed through the `public` schema.
+- Company data is scoped through active company membership and role-aware policies.
+- Sensitive write workflows use database functions that validate the signed-in user, company membership and the target record before changing data.
+- Owner/admin/manager/employee permissions are separated for management workflows.
+- Job-note storage is restricted to authenticated members of the company encoded in the storage path.
+- Direct browser access to `beta_leads` is explicitly denied.
 
-## Historical issue
+RLS is defence in depth. New tables, views, functions and storage buckets must be reviewed before they are exposed to the Data API.
 
-An earlier beta implementation authenticated directly against Supabase from browser JavaScript and persisted the returned auth session in `localStorage`. This made bearer tokens readable by JavaScript running in the same origin and was unsuitable for production TradeOS.
+## Public quote and invoice links
 
-That login path has been removed from the public beta.
+Customer quote and invoice pages intentionally work without a TradeOS account. They use random UUID share tokens that must match the target document, must not be revoked and must not be expired.
 
-## Production requirements
+Only the current public RPCs should be executable by anonymous users:
 
-Production TradeOS must not reintroduce browser-persisted bearer tokens. The production authentication layer should use:
+- `get_public_quote_v2`
+- `respond_public_quote_v2`
+- `get_public_invoice`
 
-- server-managed sessions
-- `HttpOnly`, `Secure`, appropriately scoped `SameSite` cookies
-- CSRF protection for state-changing cookie-authenticated requests
-- strict Content Security Policy and security headers
-- company-scoped authorization on every sensitive operation
-- Supabase/Postgres RLS as defence in depth, not as a substitute for application authorization
-- separate owner/admin/manager/employee permissions
-- no service-role key or privileged secret in browser bundles
-- auditable approval actions for timesheets, invoices and payments
-- secure session rotation, expiry and revocation
+Legacy public quote RPCs have been removed from anonymous/authenticated execution grants.
 
-Security changes should be reviewed before the production app accepts real user data.
+Treat a customer share URL as a bearer link: anyone who receives the complete URL can view that document until the token expires or is revoked. Do not place share URLs in analytics, logs or third-party referrers.
+
+## Browser security
+
+The app and customer-document entry pages apply a restrictive Content Security Policy and `no-referrer` policy. Third-party JavaScript is limited to a pinned Supabase client version from jsDelivr; application scripts are served from the same origin.
+
+For production hosting, `_headers` adds HSTS, clickjacking protection, MIME-sniffing protection, CSP headers and no-cache rules for the HTML entrypoints. GitHub Pages does not apply the `_headers` file, so production should use a host that supports these response headers.
+
+Supabase Auth sessions for the SPA are persisted by the Supabase browser client. This means preventing script injection is a critical control. Do not add arbitrary third-party scripts, inline JavaScript, unescaped user HTML or dynamic code execution to authenticated pages.
+
+## Authentication
+
+- Email confirmation and password recovery use Supabase Auth.
+- Password-reset pages must use the same approved application origin.
+- Leaked-password protection should be enabled in Supabase Auth before unrestricted public signup is opened.
+- Any future privileged server or Edge Function must validate authentication and authorisation independently and must never trust client-supplied role/company claims.
+
+## Release checklist
+
+Before each production release:
+
+1. Run Supabase security and performance advisors.
+2. Confirm all new public tables have RLS and intentional policies.
+3. Review all new `SECURITY DEFINER` functions for explicit authentication/authorisation, a safe fixed `search_path`, and least-privilege execute grants.
+4. Confirm no secret/service-role keys are present in browser assets or repository history.
+5. Test sign-up/sign-in/reset, company separation, roles, quotes, jobs, timesheets, invoices, public share links and sign-out on mobile and desktop.
+6. Verify CSP/security headers on the production hostname.
+7. Revoke any share link, account or credential used only for testing.
+
+Security-sensitive changes should be made on a branch, reviewed, verified, and then merged to the production branch.
