@@ -104,7 +104,6 @@
     </div>`;
     document.body.appendChild(overlay);
     lockBackground();
-    const panel=overlay.querySelector('.tos-job-picker-panel');
     const search=overlay.querySelector('#tos-job-search');
     const results=overlay.querySelector('.tos-job-picker-results');
     let closed=false;
@@ -212,7 +211,7 @@
     return new Intl.DateTimeFormat('en-GB',{day:'numeric',month:'short'}).format(new Date(y,m-1,d,12));
   }
   function prettyStatus(v){return String(v||'').replace(/[_-]+/g,' ').replace(/\b\w/g,c=>c.toUpperCase());}
-  function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));}
+  function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
