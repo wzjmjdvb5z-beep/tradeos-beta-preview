@@ -1,0 +1,81 @@
+name: TradeOS smoke checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  static-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Check JavaScript syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r -d '' file; do
+            echo "Checking $file"
+            node --check "$file"
+          done < <(find app -type f -name '*.js' -print0)
+
+      - name: Verify local HTML assets exist
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from html.parser import HTMLParser
+          from pathlib import Path
+          from urllib.parse import urlsplit
+
+          pages = [Path('index.html'), Path('app/index.html'), Path('quote/index.html'), Path('invoice/index.html')]
+          missing = []
+
+          class Assets(HTMLParser):
+              def __init__(self):
+                  super().__init__()
+                  self.refs = []
+              def handle_starttag(self, tag, attrs):
+                  attrs = dict(attrs)
+                  if tag == 'script' and attrs.get('src'):
+                      self.refs.append(attrs['src'])
+                  if tag == 'link' and attrs.get('href'):
+                      self.refs.append(attrs['href'])
+
+          for page in pages:
+              if not page.exists():
+                  missing.append(f'{page}: page missing')
+                  continue
+              parser = Assets()
+              parser.feed(page.read_text(encoding='utf-8'))
+              for ref in parser.refs:
+                  parsed = urlsplit(ref)
+                  if parsed.scheme or parsed.netloc or ref.startswith('//') or ref.startswith('data:'):
+                      continue
+                  clean = parsed.path
+                  if not clean or clean.startswith('#'):
+                      continue
+                  target = (page.parent / clean).resolve()
+                  try:
+                      target.relative_to(Path.cwd().resolve())
+                  except ValueError:
+                      missing.append(f'{page}: asset escapes repository: {ref}')
+                      continue
+                  if not target.exists():
+                      missing.append(f'{page}: missing {ref}')
+
+          if missing:
+              print('\n'.join(missing))
+              raise SystemExit(1)
+          print('All referenced local assets exist.')
+          PY
