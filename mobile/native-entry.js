@@ -17,6 +17,12 @@ if (Capacitor.isNativePlatform()) {
   `;
   document.head.appendChild(style);
 
+  const accountPrivacyScript = document.createElement('script');
+  accountPrivacyScript.src = './account-privacy-v1.js?v=1';
+  accountPrivacyScript.defer = true;
+  accountPrivacyScript.dataset.tradeosAccountPrivacyLoader = '1';
+  document.head.appendChild(accountPrivacyScript);
+
   SplashScreen.hide({ fadeOutDuration: 180 }).catch(() => {});
 
   const isExternalPurchase = (value) => {
