@@ -26,7 +26,7 @@ permissions:
   contents: read
 
 jobs:
-  ios-simulator-build:
+  ios-build-smoke:
     runs-on: macos-latest
     timeout-minutes: 30
     steps:
@@ -38,20 +38,51 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Show Xcode version
-        run: xcodebuild -version
+      - name: Show toolchain versions
+        run: |
+          xcodebuild -version
+          node --version
+          npm --version
 
       - name: Install mobile dependencies
-        run: npm install --no-audit --no-fund
+        run: |
+          npm install --no-audit --no-fund
+          npm ls --depth=0
+
+      - name: Check native bridge syntax
+        run: node --check mobile/native-entry.js
 
       - name: Prepare bundled TradeOS web app
         run: npm run mobile:prepare
+
+      - name: Verify native release guards are bundled
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f mobile-web/app/mobile-native.js
+          grep -q 'mobile-native.js' mobile-web/app/index.html
+          grep -q 'buy.stripe.com' mobile-web/app/mobile-native.js
+          grep -q 'data-tradeos-billing' mobile-web/app/mobile-native.js
+          echo 'Native bridge and purchase guard are present in the mobile bundle.'
 
       - name: Generate iOS project
         run: |
           rm -rf ios
           npx cap add ios
           npx cap sync ios
+
+      - name: Verify Apple identity and privacy manifests
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q 'PRODUCT_BUNDLE_IDENTIFIER = uk.co.benjaminchurchill.fieldservice;' ios/App/App.xcodeproj/project.pbxproj
+          manifests="$(find ios node_modules/@capacitor -name PrivacyInfo.xcprivacy -print)"
+          if [ -z "$manifests" ]; then
+            echo 'No PrivacyInfo.xcprivacy found for the Capacitor iOS dependency.' >&2
+            exit 1
+          fi
+          echo 'Privacy manifests found:'
+          echo "$manifests"
 
       - name: Build iOS simulator app
         run: |
@@ -61,5 +92,16 @@ jobs:
             -configuration Debug \
             -sdk iphonesimulator \
             -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Build unsigned iPhone device app
+        run: |
+          xcodebuild \
+            -project ios/App/App.xcodeproj \
+            -scheme App \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
             CODE_SIGNING_ALLOWED=NO \
             build
