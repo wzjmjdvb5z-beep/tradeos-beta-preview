@@ -46,6 +46,12 @@
     }finally{delete list.dataset.billingMounting;}
   }
 
+  function checkoutFor(base,companyId){
+    const raw=String(base||'').trim();if(!raw)return'';
+    try{const u=new URL(raw);u.searchParams.set('client_reference_id',companyId);return u.toString();}
+    catch(_){return raw;}
+  }
+
   async function openBilling(){
     document.querySelector('.tos-billing-sheet')?.remove();
     const ctx=await context();if(!ctx||!managerRoles.has(ctx.membership.role))return;
@@ -62,7 +68,7 @@
     const trial=status==='trialing';
     const price=(Number(b.price_pence||2400)/100).toFixed(0);
     const trialCopy=trial?`${days} day${days===1?'':'s'} remaining`:(active?'Subscription active':pretty(status));
-    const checkout=String(window.TRADEOS_CHECKOUT_URL||'').trim();
+    const checkout=checkoutFor(b.checkout_url,ctx.companyId);
 
     const o=document.createElement('div');o.className='tos-billing-sheet';
     o.innerHTML=`<div class="tos-billing-panel" role="dialog" aria-modal="true" aria-label="Plan and billing">
