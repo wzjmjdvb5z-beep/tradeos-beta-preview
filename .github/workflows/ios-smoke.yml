@@ -8,6 +8,7 @@ on:
       - 'cloud/**'
       - 'mobile/**'
       - 'scripts/**'
+      - 'privacy.html'
       - 'package.json'
       - 'capacitor.config.json'
       - '.github/workflows/ios-smoke.yml'
@@ -17,6 +18,7 @@ on:
       - 'cloud/**'
       - 'mobile/**'
       - 'scripts/**'
+      - 'privacy.html'
       - 'package.json'
       - 'capacitor.config.json'
       - '.github/workflows/ios-smoke.yml'
@@ -49,21 +51,28 @@ jobs:
           npm install --no-audit --no-fund
           npm ls --depth=0
 
-      - name: Check native bridge syntax
-        run: node --check mobile/native-entry.js
+      - name: Check native and account-control syntax
+        run: |
+          node --check mobile/native-entry.js
+          node --check app/account-privacy-v1.js
 
       - name: Prepare bundled TradeOS web app
         run: npm run mobile:prepare
 
-      - name: Verify native release guards are bundled
+      - name: Verify native release guards and compliance UI are bundled
         shell: bash
         run: |
           set -euo pipefail
           test -f mobile-web/app/mobile-native.js
+          test -f mobile-web/app/account-privacy-v1.js
+          test -f mobile-web/privacy.html
           grep -q 'mobile-native.js' mobile-web/app/index.html
           grep -q 'buy.stripe.com' mobile-web/app/mobile-native.js
           grep -q 'data-tradeos-billing' mobile-web/app/mobile-native.js
-          echo 'Native bridge and purchase guard are present in the mobile bundle.'
+          grep -q 'account-privacy-v1.js' mobile-web/app/mobile-native.js
+          grep -q 'request_account_deletion' mobile-web/app/account-privacy-v1.js
+          grep -q 'Delete account' mobile-web/privacy.html
+          echo 'Native purchase guard, privacy policy and account deletion controls are present.'
 
       - name: Generate iOS project
         run: |
