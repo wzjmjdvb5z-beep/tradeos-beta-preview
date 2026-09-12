@@ -31,6 +31,15 @@ Legacy public quote RPCs have been removed from anonymous/authenticated executio
 
 Treat a customer share URL as a bearer link: anyone who receives the complete URL can view that document until the token expires or is revoked. Do not place share URLs in analytics, logs or third-party referrers.
 
+## Billing security
+
+Stripe Checkout is handled by Stripe rather than by browser-side secret keys. Subscription state is synchronized through the `stripe-billing-webhook` Edge Function.
+
+- Stripe webhook signatures are verified before an event is processed.
+- Webhook signing secrets are stored encrypted in Supabase Vault and are retrieved only through a service-role-only database function.
+- Webhook signing secrets must never be hard-coded in Edge Function source or committed to this repository.
+- Sandbox events are prevented from overwriting a company that has already been mapped to live Stripe billing.
+
 ## Browser security
 
 The app and customer-document entry pages apply a restrictive Content Security Policy and `no-referrer` policy. Third-party JavaScript is limited to a pinned Supabase client version from jsDelivr; application scripts are served from the same origin.
@@ -53,8 +62,8 @@ Before each production release:
 1. Run Supabase security and performance advisors.
 2. Confirm all new public tables have RLS and intentional policies.
 3. Review all new `SECURITY DEFINER` functions for explicit authentication/authorisation, a safe fixed `search_path`, and least-privilege execute grants.
-4. Confirm no secret/service-role keys are present in browser assets or repository history.
-5. Test sign-up/sign-in/reset, company separation, roles, quotes, jobs, timesheets, invoices, public share links and sign-out on mobile and desktop.
+4. Confirm no secret/service-role/payment signing keys are present in browser assets, repository history or Edge Function source.
+5. Test sign-up/sign-in/reset, company separation, roles, quotes, jobs, timesheets, invoices, public share links, billing state changes and sign-out on mobile and desktop.
 6. Verify CSP/security headers on the production hostname.
 7. Revoke any share link, account or credential used only for testing.
 
