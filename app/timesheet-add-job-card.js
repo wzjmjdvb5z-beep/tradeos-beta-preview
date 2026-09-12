@@ -1,4 +1,7 @@
 (()=>{
+  const SUPABASE_URL='https://nynssdxfmjfqgodgynnu.supabase.co';
+  const SUPABASE_KEY='sb_publishable_ose18MeKd0ZPfTM1tbq2fg_hzfVcTxf';
+  const client=window.supabase?.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:false,detectSessionInUrl:false}});
   let queued=false;
 
   function start(){
@@ -108,10 +111,9 @@
 
   function showTimerPicker(overlay,timer){
     const originalSelect=timer?.querySelector('#tos-timer-job');
-    const originalStart=timer?.querySelector('#tos-start-live');
     const panel=overlay.querySelector('.tos-add-time-panel');
     if(!panel)return;
-    if(!originalSelect||!originalStart){
+    if(!originalSelect||!client){
       panel.innerHTML='<div class="tos-add-time-handle"></div><div class="tos-add-time-head"><div><p>RUN TIMER</p><h3>Timer is still loading</h3></div><button type="button" class="tos-add-time-close" aria-label="Close">×</button></div><div class="tos-add-time-note">Close this and try again in a moment.</div>';
       panel.querySelector('.tos-add-time-close')?.addEventListener('click',()=>overlay.remove());
       return;
@@ -121,21 +123,60 @@
       <div class="tos-add-time-handle"></div>
       <div class="tos-add-time-head"><div><p>RUN TIMER</p><h3>Choose the job</h3></div><button type="button" class="tos-add-time-close" aria-label="Close">×</button></div>
       <label class="tos-add-time-field"><span>Job</span><select id="tos-add-time-job">${options}</select></label>
+      <div class="tos-add-time-note" id="tos-add-time-error" hidden></div>
       <button type="button" class="tos-add-time-start">Start timer</button>`;
     panel.querySelector('.tos-add-time-close')?.addEventListener('click',()=>overlay.remove());
-    panel.querySelector('.tos-add-time-start')?.addEventListener('click',e=>{
+    panel.querySelector('.tos-add-time-start')?.addEventListener('click',async e=>{
       const btn=e.currentTarget;
       const id=panel.querySelector('#tos-add-time-job')?.value;
       if(!id)return;
-      originalSelect.value=id;
-      originalSelect.dispatchEvent(new Event('change',{bubbles:true}));
-      btn.disabled=true;
-      btn.textContent='Starting…';
-      originalStart.click();
-      setTimeout(()=>overlay.remove(),180);
+      await startTimerDirect(id,overlay,btn);
     });
   }
 
+  async function startTimerDirect(jobId,overlay,btn){
+    const errorBox=overlay.querySelector('#tos-add-time-error');
+    try{
+      if(btn){btn.disabled=true;btn.textContent='Starting…';}
+      if(errorBox){errorBox.hidden=true;errorBox.textContent='';}
+      const shared=Array.isArray(window.TradeOSTimesheetJobs)?window.TradeOSTimesheetJobs:[];
+      let companyId=shared.find(j=>j.id===jobId)?.company_id||null;
+      if(!companyId){
+        const {data,error}=await client.from('jobs').select('company_id').eq('id',jobId).maybeSingle();
+        if(error)throw error;
+        companyId=data?.company_id||null;
+      }
+      if(!companyId)throw new Error('Could not find this job workspace.');
+      const now=new Date();
+      const {error}=await client.rpc('start_job_timer',{
+        target_company:companyId,
+        target_job:jobId,
+        target_week_start:mondayIso(now),
+        work_day:localIso(now),
+        start_local:localTime(now)
+      });
+      if(error)throw error;
+      if(btn)btn.textContent='Timer started';
+      setTimeout(()=>location.reload(),180);
+    }catch(err){
+      if(btn){btn.disabled=false;btn.textContent='Start timer';}
+      if(errorBox){
+        errorBox.hidden=false;
+        errorBox.textContent=friendlyError(err);
+      }
+    }
+  }
+
+  function mondayIso(date){const d=new Date(date);d.setHours(12,0,0,0);const day=d.getDay()||7;d.setDate(d.getDate()-day+1);return localIso(d);}
+  function localIso(date){const y=date.getFullYear(),m=String(date.getMonth()+1).padStart(2,'0'),d=String(date.getDate()).padStart(2,'0');return`${y}-${m}-${d}`;}
+  function localTime(date){return`${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}:${String(date.getSeconds()).padStart(2,'0')}`;}
+  function friendlyError(err){
+    const msg=String(err?.message||'Could not start the timer.');
+    if(/already running/i.test(msg))return 'A timer is already running. Open it from Timesheets to stop or cancel it.';
+    if(/overlaps|covering this start time/i.test(msg))return 'You already have time logged over this start time. Edit that entry or start after it finishes.';
+    if(/finalised|approved/i.test(msg))return 'This week is finalised. Reopen it before adding more time.';
+    return msg;
+  }
   function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
