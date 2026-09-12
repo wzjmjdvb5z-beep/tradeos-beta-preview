@@ -31,20 +31,22 @@
   function enhance(sel){
     const card=sel.closest('.item');if(!card)return;card.dataset.teamCleanMounted='1';card.classList.add('job-team-card');
     const jobId=sel.dataset.assignSel,main=card.querySelector('.item-main'),oldToolbar=sel.closest('.toolbar');
+    const jobTitle=(main?.querySelector(':scope > strong')?.textContent||'This job').trim();
     if(oldToolbar)oldToolbar.hidden=true;
     card.querySelector('.assigns')?.classList.add('job-team-old-assigns');
-    let row=document.createElement('div');row.className='job-team-row';row.dataset.jobTeamRow=jobId;main?.appendChild(row);drawRow(jobId,row);
+    let row=document.createElement('div');row.className='job-team-row';row.dataset.jobTeamRow=jobId;row.dataset.jobTitle=jobTitle;main?.appendChild(row);drawRow(jobId,row);
   }
   function assigned(jobId){const ids=new Set(state.assignments.filter(a=>a.job_id===jobId).map(a=>a.member_id));return state.members.filter(m=>ids.has(m.id));}
   function drawRow(jobId,row){
-    const people=assigned(jobId);row.innerHTML=`<div class="job-team-summary"><span>Assigned to</span><strong>${people.length?esc(people.map(p=>p.full_name||pretty(p.role)).join(', ')):'Nobody yet'}</strong></div><button type="button" class="job-team-manage">${people.length?'Manage team':'Assign team'} <span>›</span></button>`;
-    row.querySelector('button').addEventListener('click',()=>openTeam(jobId));
+    const people=assigned(jobId),jobTitle=row.dataset.jobTitle||'This job';
+    row.innerHTML=`<div class="job-team-summary"><span>Team</span><strong>${people.length?esc(people.map(p=>p.full_name||pretty(p.role)).join(', ')):'No one assigned'}</strong></div><button type="button" class="job-team-manage">${people.length?'Manage':'Assign'} <span>›</span></button>`;
+    row.querySelector('button').addEventListener('click',()=>openTeam(jobId,jobTitle));
   }
-  function openTeam(jobId){
+  function openTeam(jobId,jobTitle){
     document.querySelector('.job-team-overlay')?.remove();
     const current=new Set(state.assignments.filter(a=>a.job_id===jobId).map(a=>a.member_id));
     const o=document.createElement('div');o.className='job-team-overlay';
-    o.innerHTML=`<div class="job-team-panel" role="dialog" aria-modal="true" aria-label="Manage job team"><div class="job-team-handle"></div><div class="job-team-head"><div><p class="eyebrow">JOB TEAM</p><h3>Manage team</h3><p>Choose everyone who should see and log time to this job.</p></div><button type="button" class="job-team-close" aria-label="Close">×</button></div><div class="job-team-people">${state.members.map(m=>`<label class="job-team-person"><input type="checkbox" value="${esc(m.id)}" ${current.has(m.id)?'checked':''}><span class="job-team-avatar">${initials(m.full_name||m.role)}</span><span><strong>${esc(m.full_name||pretty(m.role))}</strong><small>${esc(pretty(m.role))}</small></span><i></i></label>`).join('')}</div><div class="job-team-error" hidden></div><button type="button" class="job-team-save">Save team</button></div>`;
+    o.innerHTML=`<div class="job-team-panel" role="dialog" aria-modal="true" aria-label="Assign people to ${esc(jobTitle)}"><div class="job-team-handle"></div><div class="job-team-head"><div><p class="eyebrow">ASSIGN PEOPLE</p><h3>${esc(jobTitle)}</h3><p>Choose who can see this job and log time to it.</p></div><button type="button" class="job-team-close" aria-label="Close">×</button></div><div class="job-team-people">${state.members.map(m=>`<label class="job-team-person"><input type="checkbox" value="${esc(m.id)}" ${current.has(m.id)?'checked':''}><span class="job-team-avatar">${initials(m.full_name||m.role)}</span><span><strong>${esc(m.full_name||pretty(m.role))}</strong><small>${esc(pretty(m.role))}</small></span><i></i></label>`).join('')}</div><div class="job-team-error" hidden></div><button type="button" class="job-team-save">Save team for ${esc(jobTitle)}</button></div>`;
     document.body.appendChild(o);document.body.classList.add('job-team-open');
     const close=()=>{o.remove();document.body.classList.remove('job-team-open');};
     o.querySelector('.job-team-close').addEventListener('click',close);o.addEventListener('click',e=>{if(e.target===o)close();});
@@ -58,8 +60,8 @@
         state.assignments=state.assignments.filter(a=>a.job_id!==jobId||!remove.includes(a.member_id));
         add.forEach(member_id=>state.assignments.push({id:`local-${jobId}-${member_id}`,job_id:jobId,member_id}));
         const row=document.querySelector(`[data-job-team-row="${css(jobId)}"]`);if(row)drawRow(jobId,row);
-        close();toast('Job team updated');
-      }catch(x){btn.disabled=false;btn.textContent='Save team';err.textContent=x?.message||'Could not update this job team.';err.hidden=false;}
+        close();toast(`${jobTitle} team updated`);
+      }catch(x){btn.disabled=false;btn.textContent=`Save team for ${jobTitle}`;err.textContent=x?.message||'Could not update this job team.';err.hidden=false;}
     });
   }
   function toast(m){document.querySelector('.job-team-toast')?.remove();const t=document.createElement('div');t.className='job-team-toast';t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),2200);}
