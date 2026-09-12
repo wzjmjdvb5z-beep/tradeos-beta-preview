@@ -1,5 +1,5 @@
 (()=>{
-  let queued=false,lastJobId=null,lastJobTitle='';
+  let queued=false;
 
   function schedule(){
     if(queued)return;
@@ -8,49 +8,22 @@
   }
 
   function mount(){
-    mountJobCards();
+    removeListShortcuts();
     mountJobDetail();
     continuePendingTimeEntry();
   }
 
-  function mountJobCards(){
-    document.querySelectorAll('.job-detail-list-card[data-job-id]').forEach(card=>{
-      const jobId=card.dataset.jobId;
-      const title=card.querySelector('.item-main > strong')?.textContent?.trim()||'Job';
-      if(!jobId)return;
-
-      if(card.dataset.jobTimeTrack!=='1'){
-        card.dataset.jobTimeTrack='1';
-        const remember=()=>{lastJobId=jobId;lastJobTitle=title;};
-        card.addEventListener('pointerdown',remember,true);
-        card.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){remember();}},true);
-      }
-
-      if(card.querySelector('[data-job-time-shortcut]'))return;
-      const button=document.createElement('button');
-      button.type='button';
-      button.className='tos-job-time-shortcut';
-      button.dataset.jobTimeShortcut=jobId;
-      button.innerHTML='<span aria-hidden="true">+</span> Log time';
-      button.setAttribute('aria-label',`Log time to ${title}`);
-      button.addEventListener('click',e=>{
-        e.preventDefault();
-        e.stopPropagation();
-        openTimeForJob(jobId,title);
-      });
-      const chevron=card.querySelector('.job-detail-chevron');
-      if(chevron)card.insertBefore(button,chevron);else card.appendChild(button);
-    });
+  function removeListShortcuts(){
+    document.querySelectorAll('[data-job-time-shortcut]').forEach(b=>b.remove());
   }
 
   function mountJobDetail(){
     const detail=document.querySelector('.tos-job-detail .tos-job-detail-page');
     if(!detail||detail.querySelector('[data-job-detail-log-time]'))return;
-    const title=detail.querySelector('.tos-job-head-copy h2')?.textContent?.trim()||lastJobTitle||'Job';
+    const title=detail.querySelector('.tos-job-head-copy h2')?.textContent?.trim()||'Job';
     const matching=[...document.querySelectorAll('.job-detail-list-card[data-job-id]')].find(card=>card.querySelector('.item-main > strong')?.textContent?.trim()===title);
-    const jobId=lastJobId||matching?.dataset.jobId;
+    const jobId=matching?.dataset.jobId;
     if(!jobId)return;
-    lastJobId=jobId;lastJobTitle=title;
 
     const hero=detail.querySelector('.tos-job-hero-card');
     if(!hero)return;
@@ -59,7 +32,7 @@
     action.className='tos-job-detail-log-time';
     action.dataset.jobDetailLogTime=jobId;
     action.innerHTML='<span aria-hidden="true">+</span><strong>Log time</strong><small>Add hours to this job</small>';
-    action.addEventListener('click',()=>openTimeForJob(jobId,title));
+    action.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();openTimeForJob(jobId,title);});
     hero.appendChild(action);
   }
 
@@ -67,7 +40,6 @@
     if(!jobId)return;
     const payload={jobId,title:title||'Job',requestedAt:Date.now()};
     try{sessionStorage.setItem('tradeos:pending-job-time',JSON.stringify(payload));}catch(_){ }
-    lastJobId=jobId;lastJobTitle=title||'Job';
 
     document.querySelector('.tos-job-detail')?.remove();
     document.querySelector('.tos-job-team-sheet')?.remove();
