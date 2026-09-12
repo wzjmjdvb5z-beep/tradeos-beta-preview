@@ -8,6 +8,9 @@
   let current=null;
   const gbp=new Intl.NumberFormat('en-GB',{style:'currency',currency:'GBP'});
   const dateFmt=new Intl.DateTimeFormat('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+  const updateFmt=new Intl.DateTimeFormat('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  const MAX_PHOTOS=6;
+  const MAX_PHOTO_BYTES=15*1024*1024;
 
   function schedule(){if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;mount();});}
 
@@ -43,7 +46,7 @@
       const cards=[...list.querySelectorAll('.item')];
       cards.forEach(card=>enhanceCard(card));
       const p=list.querySelector(':scope > .section-head p');
-      if(p)p.textContent='Tap a job to open its people, time and details.';
+      if(p)p.textContent='Tap a job to open its people, time, updates and details.';
     }finally{busy=false;}
   }
 
@@ -89,15 +92,36 @@
 
   async function loadJob(jobId,o){
     const ctx=contextCache||await getContext(); if(!ctx)throw new Error('Your session has expired.');
-    const [jr,mr,ar,tr]=await Promise.all([
+    const [jr,mr,ar,tr,nr,fr]=await Promise.all([
       client.from('jobs').select('id,company_id,customer_id,title,status,address,scheduled_start,scheduled_end,notes,agreed_value,customers(name,email,phone,address)').eq('id',jobId).eq('company_id',ctx.companyId).single(),
       client.from('company_members').select('id,user_id,full_name,role,active').eq('company_id',ctx.companyId).eq('active',true).order('created_at',{ascending:true}),
       client.from('job_assignments').select('id,job_id,member_id').eq('company_id',ctx.companyId).eq('job_id',jobId),
-      client.from('weekly_time_entries').select('id,user_id,weekly_timesheet_id,work_date,start_time,end_time,break_minutes,hours,notes,created_at').eq('company_id',ctx.companyId).eq('job_id',jobId).order('work_date',{ascending:false}).order('start_time',{ascending:false}).limit(300)
+      client.from('weekly_time_entries').select('id,user_id,weekly_timesheet_id,work_date,start_time,end_time,break_minutes,hours,notes,created_at').eq('company_id',ctx.companyId).eq('job_id',jobId).order('work_date',{ascending:false}).order('start_time',{ascending:false}).limit(300),
+      client.from('job_notes').select('id,company_id,job_id,created_by,body,created_at,updated_at').eq('company_id',ctx.companyId).eq('job_id',jobId).order('created_at',{ascending:false}).limit(200),
+      client.from('job_note_files').select('id,company_id,job_id,note_id,created_by,storage_path,file_name,mime_type,size_bytes,created_at').eq('company_id',ctx.companyId).eq('job_id',jobId).order('created_at',{ascending:true}).limit(600)
     ]);
-    if(jr.error)throw jr.error;if(mr.error)throw mr.error;if(ar.error)throw ar.error;if(tr.error)throw tr.error;
-    current={ctx,job:jr.data,members:mr.data||[],assignments:ar.data||[],entries:tr.data||[],overlay:o};
+    if(jr.error)throw jr.error;if(mr.error)throw mr.error;if(ar.error)throw ar.error;if(tr.error)throw tr.error;if(nr.error)throw nr.error;if(fr.error)throw fr.error;
+    const state={ctx,job:jr.data,members:mr.data||[],assignments:ar.data||[],entries:tr.data||[],notes:nr.data||[],noteFiles:fr.data||[],photoUrls:{},overlay:o};
+    current=state;
+    await hydratePhotoUrls(state);
+    if(current!==state||!o.isConnected)return;
     renderJob();
+  }
+
+  async function hydratePhotoUrls(state){
+    const files=(state?.noteFiles||[]).filter(f=>f.storage_path);
+    state.photoUrls={};
+    if(!files.length)return;
+    const paths=files.map(f=>f.storage_path);
+    try{
+      const r=await client.storage.from('job-notes').createSignedUrls(paths,3600);
+      if(r.error)return;
+      (r.data||[]).forEach((item,index)=>{
+        const path=item?.path||paths[index];
+        const file=files.find(f=>f.storage_path===path)||files[index];
+        if(file&&item?.signedUrl)state.photoUrls[file.id]=item.signedUrl;
+      });
+    }catch(_){}
   }
 
   function renderJob(){
@@ -138,10 +162,140 @@
           <div class="tos-job-time-list">${entries.length?grouped.map(g=>dayGroup(g,members)).join(''):`<div class="tos-job-empty"><strong>No time entered yet</strong><p>Time logged from Timesheets will appear here against this job.</p></div>`}</div>
         </section>
 
+        ${notesSectionHtml()}
+
         ${customer?`<section class="tos-job-section tos-job-customer"><div class="tos-job-section-head"><div><span>CUSTOMER</span><h3>${esc(customer.name||'Customer')}</h3></div></div><div class="tos-job-contact">${customer.email?`<span>${esc(customer.email)}</span>`:''}${customer.phone?`<span>${esc(customer.phone)}</span>`:''}${customer.address?`<span>${esc(customer.address)}</span>`:''}</div></section>`:''}
       </main>`;
     page.querySelector('.tos-job-back')?.addEventListener('click',closeJob);
     page.querySelector('.tos-job-manage-team')?.addEventListener('click',openManageTeam);
+    bindNotesSection(page.querySelector('#tos-job-updates'));
+  }
+
+  function notesSectionHtml(){
+    const notes=current?.notes||[];
+    return `<section class="tos-job-section tos-job-updates" id="tos-job-updates">
+      <div class="tos-job-section-head"><div><span>UPDATES</span><h3>Notes & photos</h3></div><button type="button" class="tos-job-add-update">+ Add update</button></div>
+      <div class="tos-job-update-form" hidden>
+        <textarea class="tos-job-update-text" maxlength="4000" rows="4" placeholder="Add a site note, customer request, progress update or anything the team should know…"></textarea>
+        <input class="tos-job-update-files" type="file" accept="image/*" multiple hidden>
+        <div class="tos-job-update-tools"><button type="button" class="tos-job-pick-photos">📷 Add photos</button><span class="tos-job-selected-files">No photos selected</span></div>
+        <div class="tos-job-update-error" hidden></div>
+        <div class="tos-job-update-actions"><button type="button" class="tos-job-update-cancel">Cancel</button><button type="button" class="tos-job-update-save">Post update</button></div>
+      </div>
+      <div class="tos-job-update-list">${notes.length?notes.map(noteCard).join(''):`<div class="tos-job-empty"><strong>No updates yet</strong><p>Add site notes and photos here so everyone on the job has the same information.</p></div>`}</div>
+    </section>`;
+  }
+
+  function noteCard(note){
+    const member=current.members.find(m=>m.user_id===note.created_by);
+    const files=current.noteFiles.filter(f=>f.note_id===note.id);
+    const when=note.created_at?updateFmt.format(new Date(note.created_at)):'';
+    return `<article class="tos-job-update-card">
+      <div class="tos-job-update-meta"><div class="tos-job-update-avatar">${initials(member?.full_name||member?.role||'Team')}</div><div><strong>${esc(member?.full_name||'Team member')}</strong><span>${esc(when)}</span></div></div>
+      ${note.body?`<p class="tos-job-update-body">${esc(note.body)}</p>`:''}
+      ${files.length?`<div class="tos-job-update-photos">${files.map(photoTile).join('')}</div>`:''}
+    </article>`;
+  }
+
+  function photoTile(file){
+    const url=current.photoUrls?.[file.id];
+    const label=file.file_name||'Job photo';
+    return url
+      ? `<div class="tos-job-update-photo"><img src="${esc(url)}" alt="${esc(label)}" loading="lazy"></div>`
+      : `<div class="tos-job-update-photo tos-job-photo-placeholder"><span>PHOTO</span></div>`;
+  }
+
+  function bindNotesSection(section){
+    if(!section)return;
+    const form=section.querySelector('.tos-job-update-form');
+    const text=section.querySelector('.tos-job-update-text');
+    const files=section.querySelector('.tos-job-update-files');
+    const selected=section.querySelector('.tos-job-selected-files');
+    const error=section.querySelector('.tos-job-update-error');
+    const add=section.querySelector('.tos-job-add-update');
+    const cancel=section.querySelector('.tos-job-update-cancel');
+    const pick=section.querySelector('.tos-job-pick-photos');
+    const save=section.querySelector('.tos-job-update-save');
+    const reset=()=>{
+      form.hidden=true;text.value='';files.value='';selected.textContent='No photos selected';error.hidden=true;error.textContent='';add.hidden=false;
+    };
+    add?.addEventListener('click',()=>{form.hidden=false;add.hidden=true;requestAnimationFrame(()=>text.focus({preventScroll:true}));});
+    cancel?.addEventListener('click',reset);
+    pick?.addEventListener('click',()=>files.click());
+    files?.addEventListener('change',()=>{
+      const list=[...(files.files||[])];
+      selected.textContent=!list.length?'No photos selected':list.length===1?list[0].name:`${list.length} photos selected`;
+      if(list.length>MAX_PHOTOS){showUpdateError(error,`Choose up to ${MAX_PHOTOS} photos at a time.`);}else{error.hidden=true;error.textContent='';}
+    });
+    save?.addEventListener('click',()=>submitJobUpdate({form,text,files,error,save}));
+  }
+
+  async function submitJobUpdate({form,text,files,error,save}){
+    if(!current)return;
+    const body=String(text.value||'').trim();
+    const chosen=[...(files.files||[])];
+    if(!body&&!chosen.length){showUpdateError(error,'Add a note or at least one photo.');return;}
+    if(chosen.length>MAX_PHOTOS){showUpdateError(error,`Choose up to ${MAX_PHOTOS} photos at a time.`);return;}
+    const tooLarge=chosen.find(f=>Number(f.size||0)>MAX_PHOTO_BYTES);
+    if(tooLarge){showUpdateError(error,`${tooLarge.name} is larger than 15 MB.`);return;}
+    const notImage=chosen.find(f=>f.type&&!String(f.type).startsWith('image/'));
+    if(notImage){showUpdateError(error,`${notImage.name} is not an image.`);return;}
+    save.disabled=true;save.textContent=chosen.length?'Uploading…':'Saving…';error.hidden=true;error.textContent='';
+    const state=current;
+    let note=null;
+    const uploaded=[];
+    try{
+      const nr=await client.from('job_notes').insert({company_id:state.ctx.companyId,job_id:state.job.id,created_by:state.ctx.user.id,body:body||null}).select('id,company_id,job_id,created_by,body,created_at,updated_at').single();
+      if(nr.error)throw nr.error;
+      note=nr.data;
+      for(const file of chosen){
+        const ext=fileExtension(file);
+        const token=globalThis.crypto?.randomUUID?.()||`${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        const path=`${state.ctx.companyId}/${state.job.id}/${note.id}/${state.ctx.user.id}/${token}.${ext}`;
+        const ur=await client.storage.from('job-notes').upload(path,file,{cacheControl:'3600',upsert:false,contentType:file.type||'application/octet-stream'});
+        if(ur.error)throw ur.error;
+        uploaded.push(path);
+        const fr=await client.from('job_note_files').insert({company_id:state.ctx.companyId,job_id:state.job.id,note_id:note.id,created_by:state.ctx.user.id,storage_path:path,file_name:file.name||null,mime_type:file.type||null,size_bytes:Number(file.size)||null});
+        if(fr.error)throw fr.error;
+      }
+      await refreshNotes(state);
+      toast(chosen.length?'Update and photos added':'Update added');
+    }catch(x){
+      if(uploaded.length){try{await client.storage.from('job-notes').remove(uploaded);}catch(_){} }
+      if(note?.id){try{await client.from('job_note_files').delete().eq('note_id',note.id);await client.from('job_notes').delete().eq('id',note.id);}catch(_){} }
+      if(current===state&&form.isConnected){save.disabled=false;save.textContent='Post update';showUpdateError(error,x?.message||'Could not add this update.');}
+    }
+  }
+
+  async function refreshNotes(state=current){
+    if(!state||current!==state)return;
+    const [nr,fr]=await Promise.all([
+      client.from('job_notes').select('id,company_id,job_id,created_by,body,created_at,updated_at').eq('company_id',state.ctx.companyId).eq('job_id',state.job.id).order('created_at',{ascending:false}).limit(200),
+      client.from('job_note_files').select('id,company_id,job_id,note_id,created_by,storage_path,file_name,mime_type,size_bytes,created_at').eq('company_id',state.ctx.companyId).eq('job_id',state.job.id).order('created_at',{ascending:true}).limit(600)
+    ]);
+    if(nr.error)throw nr.error;if(fr.error)throw fr.error;
+    state.notes=nr.data||[];state.noteFiles=fr.data||[];
+    await hydratePhotoUrls(state);
+    if(current!==state||!state.overlay?.isConnected)return;
+    renderNotesSection();
+  }
+
+  function renderNotesSection(){
+    const old=current?.overlay?.querySelector('#tos-job-updates');
+    if(!old)return;
+    old.insertAdjacentHTML('afterend',notesSectionHtml());
+    const fresh=old.nextElementSibling;
+    old.remove();
+    bindNotesSection(fresh);
+  }
+
+  function showUpdateError(el,message){if(!el)return;el.textContent=message;el.hidden=false;}
+  function fileExtension(file){
+    const fromName=String(file?.name||'').split('.').pop().toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,8);
+    if(fromName&&fromName!==String(file?.name||'').toLowerCase())return fromName;
+    const mime=String(file?.type||'').toLowerCase();
+    if(mime.includes('png'))return'png';if(mime.includes('heic'))return'heic';if(mime.includes('heif'))return'heif';if(mime.includes('webp'))return'webp';
+    return'jpg';
   }
 
   function personRow(m,entries){
