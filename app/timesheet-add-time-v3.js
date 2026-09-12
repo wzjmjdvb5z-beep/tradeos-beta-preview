@@ -124,7 +124,16 @@
       if(error)throw error;
       if(!data)throw new Error('Timer did not start. Please try again.');
       if(btn)btn.textContent='Timer started';
-      setTimeout(()=>location.reload(),120);
+      overlay.remove();
+      const oldTimer=document.querySelector('.tos-live-timer-v2');
+      if(oldTimer)oldTimer.remove();
+      setTimeout(()=>{
+        const freshTimer=document.querySelector('.tos-live-timer-v2');
+        if(freshTimer){
+          freshTimer.classList.remove('tos-timer-choice-hidden');
+          freshTimer.scrollIntoView({behavior:'smooth',block:'start'});
+        }
+      },500);
     }catch(err){
       if(btn){btn.disabled=false;btn.textContent='Start timer';}
       if(errorBox){errorBox.hidden=false;errorBox.textContent=friendlyError(err);}
