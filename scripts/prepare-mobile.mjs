@@ -10,7 +10,7 @@ for (const dir of ['app', 'cloud', 'quote', 'invoice']) {
   await cp(dir, `${out}/${dir}`, { recursive: true });
 }
 
-for (const file of ['index.html', 'account.html', 'feedback.html']) {
+for (const file of ['index.html', 'account.html', 'feedback.html', 'privacy.html']) {
   await cp(file, `${out}/${file}`);
 }
 
