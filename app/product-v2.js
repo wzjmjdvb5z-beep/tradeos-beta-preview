@@ -103,6 +103,7 @@
   }
 
   function quick(target,icon,label,primary=false){
+    if(['quotes','finance'].includes(target)&&!document.querySelector(`.bottom-nav [data-nav="${target}"]`))return '';
     return `<button class="tos-quick${primary?' primary':''}" type="button" data-v2-nav="${target}"><span class="tos-qicon">${icon}</span>${label}</button>`;
   }
 

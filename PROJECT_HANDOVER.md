@@ -47,9 +47,21 @@ Published sign-up validation and invitation-error surfacing. Local equivalent: 2
 6. Partner reported “anonymous sign ins disabled” on Create account. Blank-email validation bug was found and patched, but the actual partner flow needs confirmation. Do not enable anonymous authentication as a workaround.
 7. Invoice creation/save failure was initially reported; adding print/PDF is not proof the save problem was fixed. Test it. Print uses a popup and inline script; investigate CSP and native iOS compatibility if it fails.
 
-## NEXT ACTION — employee permissions
+## Employee permissions implementation — 2026-09-13
 
-This was requested and discussed but NOT implemented. Inspect the deployed employee navigation, jobs/team/finance enhancements and Supabase access rules. Reproduce with appropriately authorised test context, implement least-privilege UI and backend changes, verify restricted reads/writes as an employee, publish and record evidence here. Do not ask Ben to repeat the feature request.
+Implemented after the initial handover:
+- Root cause: bootstrap loaded every visible company membership without filtering user_id, so an employee could be displayed as the first member (often owner). Now filters the authenticated user before choosing the active membership.
+- Employee UI: no Quotes/Finance navigation or financial shortcut/query; no Add job or team-management controls via the corrected role. Team remains a read-only directory with a clear access explanation. Job Value is not rendered for employees.
+- Removed the can_view_pricing employee exception in both frontend and private.can_view_pricing. Owner/admin/manager access remains.
+- Applied Supabase migration employee_access_manager_financials (source in scripts/employee-access.sql): employees read assigned jobs only; billing table/RPC restricted to managers; hourly_cost column reads revoked on both timesheet tables, with a manager-only weekly cost snapshot RPC. Updated active web callers accordingly.
+- Tests: scripts/test-employee-access.cjs passes employee/owner cases with owner first in the mocked membership list, navigation/action checks and financial-query exclusion.
+- Live database tests used an existing employee identity in a rollback transaction: no quotes/invoices/payments/rates/profit/snapshots visible, timesheet cost column privilege denied, no unassigned jobs, membership update matched zero rows, invitation/job creation and billing RPC denied. Owner financial RPC and safe weekly reads still succeeded. No user records changed by tests.
+- Security advisor reviewed: public document-link RPC and authenticated SECURITY DEFINER warnings remain; leaked-password protection disabled. This is not a comprehensive audit of every RPC. Remediation guidance: https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable and https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection .
+- Web publication is in progress at this checkpoint. Verify employee-access-1 assets on the live app before claiming delivery. Native Apple/TestFlight release unverified; old clients selecting timesheet hourly_cost need the updated build.
+
+## NEXT ACTION — verify employee experience on the partner's phone
+
+The requested employee-permissions change is implemented and tested as above. Verify deployment, then confirm the partner's existing account shows Employee, a read-only Team screen and assigned jobs/time entry without financial sections. Do not create another workspace. Real-device UX and invitation pending-state confirmation are still outstanding. Keep invoice creation/printing verification on the backlog.
 
 Useful source files: app/tradeos-cloud-static.js, modern-ui.js, home-simple.js, product-v2.js, product-clean-v1.js, jobs-clean.js, job-detail-v1.js, pricing-access-v1.js, job-finance-permission-v1.js, commercial-v1.js, team-rates-secure-fix.js, team-onboarding-v1.js.
 

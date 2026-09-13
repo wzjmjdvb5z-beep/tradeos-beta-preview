@@ -51,7 +51,7 @@
   }
 
   function pricingAllowed(m){
-    return privileged(m)||m?.can_view_pricing===true;
+    return privileged(m);
   }
 
   async function loadProfitability(companyId){

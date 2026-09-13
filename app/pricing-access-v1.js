@@ -7,7 +7,7 @@
   let queued=false,busy=false,ctx=null;
 
   const privilegedRole=role=>['owner','admin','manager'].includes(String(role||'').toLowerCase());
-  const canSeePricing=membership=>privilegedRole(membership?.role)||membership?.can_view_pricing===true;
+  const canSeePricing=membership=>privilegedRole(membership?.role);
 
   function schedule(){
     if(queued)return;
@@ -97,7 +97,7 @@
     card.className='card section tos-pricing-access-card';
     card.innerHTML=`
       <div class="tos-pricing-head">
-        <div><span>PERMISSIONS</span><h3>Pricing access</h3><p>Choose which employees can see job values and profit figures.</p></div>
+        <div><span>PERMISSIONS</span><h3>Pricing access</h3><p>Employees cannot see pricing or financial information. Owners, admins and managers have access.</p></div>
       </div>
       <div class="tos-pricing-list">${members.map(memberRow).join('')}</div>`;
 
@@ -114,13 +114,13 @@
 
   function memberRow(m){
     const automatic=privilegedRole(m.role);
-    const checked=automatic||m.can_view_pricing===true;
+    const checked=automatic;
     const label=automatic?'Always allowed':checked?'Pricing visible':'Pricing hidden';
     return `<div class="tos-pricing-row">
       <div class="tos-pricing-person"><strong>${esc(m.full_name||pretty(m.role))}</strong><small>${esc(pretty(m.role))}</small></div>
       <label class="tos-pricing-switch ${automatic?'is-locked':''}">
         <span data-pricing-label="${esc(m.id)}">${esc(label)}</span>
-        <input type="checkbox" data-pricing-toggle="${esc(m.id)}" ${checked?'checked':''} ${automatic?'disabled':''} aria-label="Pricing access for ${esc(m.full_name||'team member')}">
+        <input type="checkbox" data-pricing-toggle="${esc(m.id)}" ${checked?'checked':''} disabled aria-label="Pricing access for ${esc(m.full_name||'team member')}">
         <i aria-hidden="true"></i>
       </label>
     </div>`;

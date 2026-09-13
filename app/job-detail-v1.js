@@ -144,7 +144,7 @@
         <section class="tos-job-hero-card">
           <div class="tos-job-address">${esc(job.address||customer?.address||'No address added')}</div>
           <div class="tos-job-metrics">
-            <div><span>Value</span><strong>${gbp.format(num(job.agreed_value))}</strong></div>
+            ${manager?`<div><span>Value</span><strong>${gbp.format(num(job.agreed_value))}</strong></div>`:''}
             <div><span>Total time</span><strong>${hours(totalHours)}</strong></div>
             <div><span>People</span><strong>${assigned.length}</strong></div>
           </div>

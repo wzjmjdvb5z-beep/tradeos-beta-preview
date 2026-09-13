@@ -5,6 +5,12 @@
     const wrap=document.querySelector('main.wrap');
     const form=document.querySelector('#jobform');
 
+    if(!wrap||!document.querySelector('.bottom-nav [data-nav="jobs"].active')){
+      document.querySelectorAll('.jobs-form-sheet,.jobs-add-trigger').forEach(x=>x.remove());
+      document.body.classList.remove('jobs-sheet-open');return;
+    }
+    const list=wrap.querySelector('section.card.section:has(.list)');
+    list?.classList.add('jobs-list-clean');
     if(!form){
       wrap?.classList.remove('jobs-clean-page');
       return;
