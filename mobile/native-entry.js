@@ -1,4 +1,5 @@
 import { App } from '@capacitor/app';
+import { Browser } from '@capacitor/browser';
 import { Capacitor } from '@capacitor/core';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { Share } from '@capacitor/share';
@@ -77,10 +78,17 @@ if (Capacitor.isNativePlatform()) {
     await Share.share({ title, text, url, dialogTitle: title });
   };
 
+  const openExternal = async (value) => {
+    const url = new URL(String(value || ''));
+    if (!/^https?:$/.test(url.protocol)) throw new Error('Only secure web links can be previewed.');
+    await Browser.open({ url: url.href });
+  };
+
   window.tradeOSNative = Object.freeze({
     isNative: true,
     platform: Capacitor.getPlatform(),
     share: nativeShare,
+    openExternal,
     haptic: () => Haptics.impact({ style: ImpactStyle.Medium })
   });
 
