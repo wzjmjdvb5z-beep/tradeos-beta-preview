@@ -30,6 +30,13 @@ jobs:
             node --check "$file"
           done < <(find app -type f -name '*.js' -print0)
 
+      - name: Check workflow regressions
+        run: |
+          node scripts/test-employee-access.cjs
+          node scripts/test-schedule-visibility.cjs
+          node scripts/test-job-actions.cjs
+          node scripts/test-commercial-readiness.cjs
+
       - name: Verify local HTML assets exist
         shell: bash
         run: |

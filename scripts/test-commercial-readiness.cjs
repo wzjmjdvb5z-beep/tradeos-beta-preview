@@ -1,0 +1,20 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+let source=fs.readFileSync('app/commercial-v1.js','utf8');
+source=source.replace('  new MutationObserver(schedule)', '  globalThis.api={printInvoice,displayInvoiceStatus,reload,setLoader(fn){loadContext=fn;},setDraw(fn){drawQuotes=fn;drawFinance=fn;}};\n  new MutationObserver(schedule)');
+let html='',printed=0,focused=0,load,nav='quotes',draws=[];
+const elements=[];
+const popup={closed:false,focus(){focused++;},print(){printed++;},addEventListener(name,fn){if(name==='load')load=fn;},document:{open(){},write(s){html=s;},close(){load();},createElement(tag){const el={tag,addEventListener(name,fn){this[name]=fn;}};elements.push(el);return el;},body:{prepend(){}},head:{appendChild(){}}}};
+const wrap={isConnected:true};
+const doc={querySelector(s){return s==='main.wrap'?wrap:null;},querySelectorAll(){return [{dataset:{nav},classList:{contains:()=>false}}];},addEventListener(){},readyState:'loading'};
+const context={window:{supabase:{createClient:()=>({})},open:()=>popup,addEventListener(){}},document:doc,MutationObserver:class{observe(){}},Intl,Date,setTimeout(){}};
+vm.runInNewContext(source,context);const api=context.api;
+api.printInvoice({invoice_number:'INV-1',created_at:'2026-09-13',subtotal:100,vat:20,total:120},{title:'<script>bad()</script>'},{name:'A & B'},[],[{amount:20}],{name:'Example Electrics',vat_number:'GB123',bank_account_name:'Example',bank_sort_code:'00-00-00',bank_account_number:'12345678',invoice_terms:'Pay <promptly>'});
+assert.ok(html.includes('Example Electrics'));assert.ok(html.includes('GB123'));assert.ok(html.includes('12345678'));assert.ok(html.includes('Pay &lt;promptly&gt;'));assert.equal(printed,1);assert.equal(focused,1);assert.ok(!html.includes('<script>'));assert.ok(html.includes('&lt;script&gt;bad()&lt;/script&gt;'));assert.ok(html.includes('A &amp; B'));assert.ok(html.includes('£100.00'));
+elements.find(x=>x.tag==='button').click();assert.equal(printed,2);
+assert.equal(api.displayInvoiceStatus({status:'void'},0),'void');
+(async()=>{
+let pending=[];api.setLoader(()=>new Promise(resolve=>pending.push(resolve)));api.setDraw((w,c)=>draws.push(c));
+const first=api.reload('quotes'),second=api.reload('quotes');pending[1]('new');await second;pending[0]('old');await first;assert.deepEqual(draws,['new']);
+const third=api.reload('quotes');nav='jobs';pending[2]('late');await third;assert.deepEqual(draws,['new']);
+console.log('PASS: external print trigger, retry, escaping, void status, stale refresh and navigation race.');
+})();

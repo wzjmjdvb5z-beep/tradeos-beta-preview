@@ -1,27 +1,22 @@
-# TradeOS beta preview
+# TradeOS web app and iOS beta
 
-This repository is a **workflow prototype**, not the production TradeOS application.
+This repository contains the live authenticated web app and the Capacitor iOS shell. It is no longer a local-only demo.
 
-## Security status
+- Web entry: `app/index.html`
+- Backend: Supabase Auth, Postgres/RLS, Storage and authenticated RPCs.
+- Mobile bundle: `npm run mobile:prepare`; native entry: `mobile/native-entry.js`.
+- GitHub Actions checks JavaScript syntax, local assets and workflow regressions. Separate workflows build iOS and upload to TestFlight.
+- A successful TestFlight upload is not App Review approval or proof of real-device functionality.
 
-The public GitHub Pages preview is deliberately **local-only**:
+Read `PROJECT_HANDOVER.md` before continuing. Read `RELEASE_READINESS.md` for verified results and outstanding launch requirements; do not call the app production-ready until those requirements are resolved.
 
-- no account sign-in
-- no bearer-token persistence
-- no authenticated Supabase calls
-- no cloud sync
-- no real customer/employee data should be entered
+## Regression checks
 
-The earlier prototype used direct browser-to-Supabase authentication and stored the returned session in `localStorage`. That approach has been disabled and is not the production architecture.
+```sh
+node scripts/test-commercial-readiness.cjs
+node scripts/test-employee-access.cjs
+node scripts/test-job-actions.cjs
+node scripts/test-schedule-visibility.cjs
+```
 
-Production TradeOS is being built separately in the private `TradeOs` repository with company-scoped data, RLS and a server-managed authentication/session layer.
-
-## Purpose
-
-This public preview exists only to validate the core workflow with demo data:
-
-`enquiry → quote → job → timesheet → approval → job profit`
-
-See `SECURITY.md` for the security boundary and production requirements.
-
-_Last redeploy trigger: secured preview._
+See `SECURITY.md` for the security architecture. Never commit privileged credentials or real customer test fixtures.
