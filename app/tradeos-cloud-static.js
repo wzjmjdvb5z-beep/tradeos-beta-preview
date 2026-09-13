@@ -14,7 +14,10 @@ async function req(api,body){
     if(error)throw error; return {session:!!data.session,user:data.user};
   }
   if(api==='signup'){
-    const {data,error}=await sb.auth.signUp({email:String(body.email||'').trim().toLowerCase(),password:String(body.password||'')});
+    const email=String(body.email||'').trim().toLowerCase(),password=String(body.password||'');
+    if(!email||! /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))throw new Error('Enter a valid email address before creating your account.');
+    if(password.length<8)throw new Error('Choose a password with at least 8 characters.');
+    const {data,error}=await sb.auth.signUp({email,password});
     if(error)throw error; return data.session?{session:true,user:data.user}:{session:false,message:'Check your email to confirm the account, then sign in.'};
   }
   if(api==='signout'){const {error}=await sb.auth.signOut();if(error)throw error;return{ok:true};}
@@ -44,7 +47,8 @@ function rpcData(r,fallback){if(r.error)throw r.error;if(r.data===undefined)thro
 async function bootstrap(){
   const {data:{user},error:userError}=await sb.auth.getUser();
   if(userError||!user)throw new Error('AUTH');
-  await sb.rpc('accept_my_company_invitations');
+  const invitationResult=await sb.rpc('accept_my_company_invitations');
+  if(invitationResult.error)throw new Error('Could not join your invited workspace: '+invitationResult.error.message);
   const membershipsResult=await sb.from('company_members').select('id,company_id,user_id,full_name,role,active,hourly_cost,companies(name,trade_type)').eq('active',true).order('created_at',{ascending:true});
   if(membershipsResult.error)throw membershipsResult.error;
   const memberships=membershipsResult.data||[];
@@ -71,7 +75,17 @@ async function bootstrap(){
 async function start(){const {data:{session}}=await sb.auth.getSession();if(!session)return auth();try{await refresh()}catch(e){auth(e.message==='AUTH'?'':e.message)}}
 async function refresh(){data=await req('bootstrap');if(!companyId&&data.activeCompany)companyId=data.activeCompany.id;render()}
 function auth(msg=''){root.innerHTML=`<div class="auth-shell"><section class="card auth-card"><p class="eyebrow">TRADEOS CLOUD BETA</p><h2>One live workspace for the whole team.</h2><p class="sub">Sign in to manage quotes, jobs, timesheets, profit, invoices and payments.</p><form id="auth"><div class="field"><label>Email</label><input name="email" type="email" required></div><div class="field"><label>Password</label><input name="password" type="password" minlength="8" required></div><div class="auth-actions"><button class="btn">Sign in</button><button class="btn secondary" type="button" id="signup">Create account</button></div></form>${msg?`<div class="error">${esc(msg)}</div>`:''}<div id="authmsg"></div></section></div>`;const f=$('#auth');f.onsubmit=e=>{e.preventDefault();login('signin',f)};$('#signup').onclick=()=>login('signup',f)}
-async function login(action,f){const x=new FormData(f),m=$('#authmsg');m.innerHTML='';try{const r=await req(action,{email:x.get('email'),password:x.get('password')});if(r.session)await refresh();else m.innerHTML=`<div class="success">${esc(r.message||'Check your email, then sign in.')}</div>`}catch(e){m.innerHTML=`<div class="error">${esc(e.message==='AUTH'?'Sign in failed':e.message)}</div>`}}
+async function login(action,f){
+  const m=$('#authmsg');m.innerHTML='';
+  if(f.dataset.authBusy==='1')return;
+  f.elements.email.value=f.elements.email.value.trim();
+  if(!f.reportValidity()){m.innerHTML='<div class="error">Enter your email and a password of at least 8 characters above, then try again.</div>';return;}
+  const x=new FormData(f),buttons=[...f.querySelectorAll('button')];
+  f.dataset.authBusy='1';buttons.forEach(b=>b.disabled=true);
+  try{const r=await req(action,{email:x.get('email'),password:x.get('password')});if(r.session)await refresh();else m.innerHTML=`<div class="success">${esc(r.message||'Check your email, then sign in.')}</div>`}
+  catch(e){m.innerHTML=`<div class="error">${esc(e.message==='AUTH'?'Sign in failed':e.message)}</div>`;}
+  finally{delete f.dataset.authBusy;buttons.forEach(b=>b.disabled=false);}
+}
 function setup(){root.innerHTML=`<div class="auth-shell"><section class="card auth-card"><p class="eyebrow">TRADEOS SETUP</p><h2>Create your company workspace</h2><p class="sub">If you were invited with this email, TradeOS will join you automatically. Otherwise create a workspace.</p><form id="setup"><div class="field"><label>Company name</label><input name="companyName" required></div><div class="field"><label>Your name</label><input name="ownerName" required></div><div class="field"><label>Trade</label><input name="tradeType" value="Electrician"></div><button class="btn">Create workspace</button><button class="btn secondary" type="button" id="logout">Sign out</button></form><div id="setupmsg"></div></section></div>`;$('#setup').onsubmit=async e=>{e.preventDefault();const f=new FormData(e.currentTarget);try{await req('create_company',Object.fromEntries(f.entries()));await refresh()}catch(err){$('#setupmsg').innerHTML=`<div class="error">${esc(err.message)}</div>`}};$('#logout').onclick=logout}
 function render(){if(!data?.user)return auth();if(!data.memberships?.length)return setup();const role=data.activeMembership.role,isManager=['owner','admin','manager'].includes(role);root.innerHTML=`<div class="app"><header class="topbar"><div class="brand"><div class="logo">T</div><h1>TradeOS</h1></div><div class="toolbar">${data.memberships.length>1?`<select id="company">${data.memberships.map(m=>`<option value="${m.company_id}" ${m.company_id===data.activeCompany.id?'selected':''}>${esc(m.companies?.name||'Company')}</option>`).join('')}</select>`:''}<span class="beta">${esc(role)} · cloud beta</span><button class="btn secondary small" id="logout">Sign out</button></div></header><main class="wrap">${page(isManager)}</main><nav class="bottom-nav">${nav('home','⌂','Home')}${nav('jobs','▣','Jobs')}${nav('quotes','£','Quotes')}${nav('timesheets','◷','Time')}${nav('finance','◈','Finance')}${nav('team','♟','Team')}</nav><div class="toast" id="toast"></div></div>`;document.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>{view=b.dataset.nav;render()});$('#logout').onclick=logout;$('#company')?.addEventListener('change',async e=>{companyId=e.target.value;await refresh()});bind(isManager)}
 function nav(v,i,t){return `<button class="nav ${view===v?'active':''}" data-nav="${v}"><b>${i}</b><span>${t}</span></button>`}
