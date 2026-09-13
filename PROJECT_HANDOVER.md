@@ -57,7 +57,7 @@ Implemented after the initial handover:
 - Tests: scripts/test-employee-access.cjs passes employee/owner cases with owner first in the mocked membership list, navigation/action checks and financial-query exclusion.
 - Live database tests used an existing employee identity in a rollback transaction: no quotes/invoices/payments/rates/profit/snapshots visible, timesheet cost column privilege denied, no unassigned jobs, membership update matched zero rows, invitation/job creation and billing RPC denied. Owner financial RPC and safe weekly reads still succeeded. No user records changed by tests.
 - Security advisor reviewed: public document-link RPC and authenticated SECURITY DEFINER warnings remain; leaked-password protection disabled. This is not a comprehensive audit of every RPC. Remediation guidance: https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable and https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection .
-- Web publication is in progress at this checkpoint. Verify employee-access-1 assets on the live app before claiming delivery. Native Apple/TestFlight release unverified; old clients selecting timesheet hourly_cost need the updated build.
+- Published as aa4b90da30dd39fe7c1d972d1a59dfa3bf5f90f0. Pages deployment run 34765569740 and smoke checks 34765570466 completed successfully. Public app HTML was verified to load employee-access-1 assets. Native Apple/TestFlight workflows were still in progress; old clients selecting timesheet hourly_cost need the updated build. Real-phone UX remains to be confirmed.
 
 ## NEXT ACTION — verify employee experience on the partner's phone
 
