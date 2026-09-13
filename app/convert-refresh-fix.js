@@ -5,6 +5,7 @@
   const SUPABASE_KEY='sb_publishable_ose18MeKd0ZPfTM1tbq2fg_hzfVcTxf';
   const sb=window.supabase?.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
   if(!sb)return;
+  let lastQuoteId=null;
 
   function toast(message,error=false){
     document.querySelector('.tos-convert-fix-toast')?.remove();
@@ -33,12 +34,17 @@
   }
 
   document.addEventListener('click',e=>{
-    const button=e.target.closest?.('[data-com-convert]');
+    const quote=e.target.closest?.('[data-com-quote]');
+    if(quote?.dataset?.comQuote)lastQuoteId=quote.dataset.comQuote;
+
+    const button=e.target.closest?.('[data-com-convert],[data-sheet-convert]');
     if(!button)return;
+    const id=button.dataset.comConvert||lastQuoteId;
+    if(!id)return;
     e.preventDefault();
     e.stopPropagation();
     e.stopImmediatePropagation();
-    convert(button.dataset.comConvert,button);
+    convert(id,button);
   },true);
 
   function restoreNav(){
