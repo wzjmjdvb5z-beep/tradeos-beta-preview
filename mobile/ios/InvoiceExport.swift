@@ -6,6 +6,31 @@ class TradeOSViewController: CAPBridgeViewController {
     override func capacitorDidLoad() {
         bridge?.registerPluginInstance(InvoiceExportPlugin())
     }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        if ProcessInfo.processInfo.arguments.contains("--invoice-export-smoke") {
+            checkExportBridge(attempt: 0)
+        }
+    }
+
+    private func checkExportBridge(attempt: Int) {
+        webView?.evaluateJavaScript("Boolean(window.Capacitor && window.Capacitor.isPluginAvailable('InvoiceExport'))") { [weak self] value, error in
+            guard let self = self else { return }
+            if (value as? Bool) == true {
+                self.writeSmokeResult("registered")
+            } else if attempt < 30 {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1) { self.checkExportBridge(attempt: attempt + 1) }
+            } else {
+                self.writeSmokeResult("missing")
+            }
+        }
+    }
+
+    private func writeSmokeResult(_ result: String) {
+        let directory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        try? result.write(to: directory.appendingPathComponent("invoice-export-smoke.txt"), atomically: true, encoding: .utf8)
+    }
 }
 
 private final class InvoicePageRenderer: UIPrintPageRenderer {

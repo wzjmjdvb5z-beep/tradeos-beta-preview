@@ -128,6 +128,13 @@ jobs:
           echo "MARKETING_VERSION=$VERSION" >> "$GITHUB_ENV"
           echo "BUILD_NUMBER=$BUILD" >> "$GITHUB_ENV"
 
+      - name: Verify invoice export in running iOS simulator
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath build/ios-smoke CODE_SIGNING_ALLOWED=NO build
+          bash scripts/check-native-ios.sh
+
       - name: Archive unsigned iOS app
         shell: bash
         run: |

@@ -14,3 +14,13 @@ if(!xml.includes('customClass="TradeOSViewController"')) {
   await writeFile(storyboard,xml);
 }
 console.log('Installed native invoice PDF export and registered bridge controller.');
+// Capacitor 8.5+ constructs its root controller in SceneDelegate, bypassing the storyboard.
+const scenePath='ios/App/App/SceneDelegate.swift';
+try {
+  let scene=await readFile(scenePath,'utf8');
+  if(!scene.includes('rootViewController = TradeOSViewController()')) {
+    if(!scene.includes('rootViewController = CAPBridgeViewController()'))throw new Error('Unknown scene root controller; native export registration cannot be verified.');
+    scene=scene.replace('rootViewController = CAPBridgeViewController()','rootViewController = TradeOSViewController()');
+    await writeFile(scenePath,scene);
+  }
+} catch(error) { if(error.code!=='ENOENT')throw error; }
