@@ -83,14 +83,15 @@
     const weekDays=daysOfWeek(weekStart);
     const todayIso=localIso(new Date());
     const scheduled=visibleJobs.filter(j=>j.scheduled_start);
-    const unscheduled=ctx.isManager?ctx.jobs.filter(j=>!j.scheduled_start):[];
+    const unscheduled=visibleJobs.filter(j=>!j.scheduled_start);
     const clashes=ctx.isManager?findAllClashes(ctx.jobs,ctx.assignments):[];
     const hours=sum(scheduled.filter(j=>inWeek(j.scheduled_start,weekStart)).map(jobHours));
     wrap.innerHTML=`<div class="tos-schedule-shell">
       <section class="tos-schedule-hero"><div><p class="eyebrow">${ctx.isManager?'SCHEDULE & DISPATCH':'MY SCHEDULE'}</p><h2>${ctx.isManager?'Plan the team.':'Know where you need to be.'}</h2><p>${ctx.isManager?'Assign jobs, spot clashes and keep the week moving.':'Your assigned jobs and times in one place.'}</p></div>${ctx.isManager?'<button class="btn" id="tos-schedule-unscheduled">+ Schedule job</button>':''}</section>
       <section class="card tos-schedule-toolbar"><div class="tos-view-switch"><button class="tos-view-btn ${mode==='today'?'active':''}" data-schedule-view="today">Today</button><button class="tos-view-btn ${mode==='week'?'active':''}" data-schedule-view="week">Week</button></div><div class="tos-week-switch"><button class="tos-week-btn" id="tos-prev-week">‹</button><button class="tos-week-btn" id="tos-this-week">Today</button><span class="tos-week-title">${fmtDay(weekDays[0])} – ${fmtDay(weekDays[6])}</span><button class="tos-week-btn" id="tos-next-week">›</button></div>${ctx.isManager?`<select id="tos-member-filter" class="tos-week-btn"><option value="all">All team</option>${ctx.members.map(m=>`<option value="${esc(m.id)}" ${memberFilter===m.id?'selected':''}>${esc(m.full_name||'Unnamed')}</option>`).join('')}</select>`:''}</section>
-      <section class="tos-schedule-summary">${scheduleStat('Scheduled this week',scheduled.filter(j=>inWeek(j.scheduled_start,weekStart)).length)}${scheduleStat('Planned hours',fmtHours(hours))}${scheduleStat(ctx.isManager?'Unscheduled jobs':'Today',ctx.isManager?unscheduled.length:scheduled.filter(j=>dateIso(j.scheduled_start)===todayIso).length)}${scheduleStat(ctx.isManager?'Clashes':'Assigned jobs',ctx.isManager?clashes.length:scheduled.length)}</section>
-      ${ctx.isManager&&unscheduled.length?renderUnscheduled(unscheduled.slice(0,8)):''}
+      <section class="tos-schedule-summary">${scheduleStat('Scheduled this week',scheduled.filter(j=>inWeek(j.scheduled_start,weekStart)).length)}${scheduleStat('Planned hours',fmtHours(hours))}${scheduleStat(ctx.isManager?'Unscheduled jobs':'Today',ctx.isManager?unscheduled.length:scheduled.filter(j=>dateIso(j.scheduled_start)===todayIso).length)}${scheduleStat(ctx.isManager?'Clashes':'Assigned jobs',ctx.isManager?clashes.length:visibleJobs.length)}</section>
+      ${unscheduled.length?renderUnscheduled(unscheduled):''}
+      ${!ctx.isManager&&!visibleJobs.length?'<section class="card section"><div class="empty">No jobs assigned yet. Your manager can assign you from Jobs → Manage team.</div></section>':''}
       ${mode==='today'?renderToday(visibleJobs,todayIso):renderWeek(visibleJobs,weekDays,todayIso)}
     </div>`;
     bindSchedule();
@@ -110,7 +111,7 @@
   }
 
   function renderUnscheduled(jobs){
-    return `<section class="card tos-unscheduled"><div class="tos-unscheduled-head"><div><h3>Unscheduled jobs</h3><p class="sub">Jobs waiting to be put in the diary.</p></div></div><div class="tos-unscheduled-list">${jobs.map(j=>`<div class="tos-unscheduled-job"><div><strong>${esc(j.title)}</strong><small>${esc(j.address||'No site address')}</small></div><button class="tos-mini-btn" data-schedule-job="${esc(j.id)}">Schedule</button></div>`).join('')}</div></section>`;
+    return `<section class="card tos-unscheduled"><div class="tos-unscheduled-head"><div><h3>${ctx.isManager?'Unscheduled jobs':'Awaiting dates'}</h3><p class="sub">${ctx.isManager?'Set a date and assign the team to show a job in their calendar.':'These jobs are assigned to you. Your manager needs to set a date before they appear in the calendar.'}</p></div></div><div class="tos-unscheduled-list">${jobs.map(j=>`<div class="tos-unscheduled-job"><div><strong>${esc(j.title)}</strong><small>${esc(j.address||'No site address')}</small></div>${ctx.isManager?`<button class="tos-mini-btn" data-schedule-job="${esc(j.id)}">Schedule</button>`:'<span class="sub">Date to be confirmed</span>'}</div>`).join('')}</div></section>`;
   }
 
   function renderWeek(jobs,days,todayIso){

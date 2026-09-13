@@ -203,7 +203,7 @@
   function cleanSchedule(wrap){
     wrap.classList.add('tos-clean-schedule');
     const unscheduled=wrap.querySelector('.tos-unscheduled');
-    if(unscheduled)unscheduled.dataset.cleanHidden='1';
+    if(unscheduled)delete unscheduled.dataset.cleanHidden;
   }
 
   function cleanTimesheets(wrap){

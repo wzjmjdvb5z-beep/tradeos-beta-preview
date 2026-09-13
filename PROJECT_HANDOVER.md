@@ -72,3 +72,13 @@ Supabase project reference visible in the frontend: nynssdxfmjfqgodgynnu. Use th
 “Continue TradeOS. Read PROJECT_HANDOVER.md in wzjmjdvb5z-beep/tradeos-beta-preview first. Continue the unfinished employee-permissions work.”
 
 This file is a durable checkpoint, not a guarantee that a new chat automatically loads it. Fetch its latest version and verify current source/deployment state.
+
+## Schedule visibility follow-up — 2026-09-13
+
+User confirmed the employee changes work, then reported the schedule showing nothing. Live read-only aggregate inspection found 13 jobs, one dated job, one employee assignment and zero dated employee-assigned jobs. The employee calendar only rendered dated assignments, omitting their undated job; the product cleanup also hid the owner's unscheduled list.
+
+- Schedule now displays undated assigned jobs under Awaiting dates for employees, without editing controls or financial data. Assigned jobs count includes undated assignments. An explicit message explains when no jobs are assigned.
+- Owners/managers can see their unscheduled list and Schedule buttons again, with guidance to date and assign jobs. Existing calendar and assignment restrictions are preserved. No job dates, assignments or backend policies were changed.
+- Updated schedule-board.js and product-clean-v1.js cache versions to schedule-visibility-1.
+- scripts/test-schedule-visibility.cjs passes employee assignment isolation, escaped job titles and owner scheduling controls. Existing employee-access regression also passes; both changed scripts pass syntax checks and git diff passes whitespace checks.
+- Publication pending at this checkpoint. Verify Pages completion and served assets before reporting live. Real-phone confirmation is still needed; if a dated owner job is missing, ask which account/date and diagnose that separately.
