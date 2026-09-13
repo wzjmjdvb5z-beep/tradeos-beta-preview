@@ -90,8 +90,8 @@ jobs:
           grep -q 'request_account_deletion' mobile-web/app/account-privacy-v1.js
           grep -q 'buy.stripe.com' mobile-web/app/mobile-native.js
           grep -q 'data-tradeos-billing' mobile-web/app/mobile-native.js
-          grep -q '"appStartPath": "app/index.html"' capacitor.config.json
-          grep -q '"appStartPath" : "app/index.html"' ios/App/App/capacitor.config.json || grep -q '"appStartPath":"app/index.html"' ios/App/App/capacitor.config.json
+          grep -Eq '"appStartPath"[[:space:]]*:[[:space:]]*"app/index.html"' capacitor.config.json
+          grep -Eq '"appStartPath"[[:space:]]*:[[:space:]]*"app/index.html"' ios/App/App/capacitor.config.json
           grep -q "PRODUCT_BUNDLE_IDENTIFIER = ${APP_BUNDLE_ID};" ios/App/App.xcodeproj/project.pbxproj
 
       - name: Install App Store Connect API key
