@@ -59,9 +59,9 @@ Implemented after the initial handover:
 - Security advisor reviewed: public document-link RPC and authenticated SECURITY DEFINER warnings remain; leaked-password protection disabled. This is not a comprehensive audit of every RPC. Remediation guidance: https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable and https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection .
 - Published as aa4b90da30dd39fe7c1d972d1a59dfa3bf5f90f0. Pages deployment run 34765569740 and smoke checks 34765570466 completed successfully. Public app HTML was verified to load employee-access-1 assets. Native Apple/TestFlight workflows were still in progress; old clients selecting timesheet hourly_cost need the updated build. Real-phone UX remains to be confirmed.
 
-## NEXT ACTION — verify employee experience on the partner's phone
+## NEXT ACTION — verify job stages and deletion on the owner's phone
 
-The requested employee-permissions change is implemented and tested as above. Verify deployment, then confirm the partner's existing account shows Employee, a read-only Team screen and assigned jobs/time entry without financial sections. Do not create another workspace. Real-device UX and invitation pending-state confirmation are still outstanding. Keep invoice creation/printing verification on the backlog.
+Ben confirmed employee permissions work and the schedule seems good. Job deletion and the five stages are now published; see the latest checkpoint below. Next, verify the stage selector and deletion confirmation on his phone using a disposable job. Invoice save/print and instant quote updates still require real-device follow-through before continuing Apple release verification. Do not repeat completed permissions or schedule work.
 
 Useful source files: app/tradeos-cloud-static.js, modern-ui.js, home-simple.js, product-v2.js, product-clean-v1.js, jobs-clean.js, job-detail-v1.js, pricing-access-v1.js, job-finance-permission-v1.js, commercial-v1.js, team-rates-secure-fix.js, team-onboarding-v1.js.
 
@@ -69,7 +69,7 @@ Supabase project reference visible in the frontend: nynssdxfmjfqgodgynnu. Use th
 
 ## How to resume in a new chat
 
-“Continue TradeOS. Read PROJECT_HANDOVER.md in wzjmjdvb5z-beep/tradeos-beta-preview first. Continue the unfinished employee-permissions work.”
+“Continue TradeOS. Read PROJECT_HANDOVER.md in wzjmjdvb5z-beep/tradeos-beta-preview first. Continue from the latest NEXT ACTION and checkpoint.”
 
 This file is a durable checkpoint, not a guarantee that a new chat automatically loads it. Fetch its latest version and verify current source/deployment state.
 
@@ -93,4 +93,6 @@ Ben confirmed schedule seems good, requested Delete jobs and stages Ready → In
 - Scheduling edits only dates/people now; change stages through Jobs so schedule edits cannot overwrite billing progression.
 - Verification: rollback database tests passed owner stage/billing/reset/delete with temporary assigned job; protected note blocked deletion and retained assignment; employee stage/delete denied and financial rows invisible. scripts/test-job-actions.cjs, test-employee-access.cjs and test-schedule-visibility.cjs pass. JavaScript syntax and whitespace checks pass.
 - Security advisors show pre-existing document-link/definer/leaked-password notices; no manage_job finding (invoker, no anonymous execution). Existing remediation links above apply.
-- Publication pending at this checkpoint; verify Pages and served assets before claiming live. Real-phone job-stage and delete confirmation still need user verification. Apple/TestFlight completion remains separate.
+- Published as 858b642d64e1b6cf5042fb6ae9a4612e20b6b2c7. On continuation, remote source tree exactly matched local tested tree bc2c2d56c9c10bfaa5e6ac91fc9d0ed17288df83. Public app HTML serves all four job-actions-1 assets; fetched public job-detail-v1.js exactly matches the tested local file. This confirms web delivery.
+- GitHub smoke checks 34767345288, iOS smoke build 34767345293 and TestFlight release workflow 34767345231 all completed successfully. App Store Connect processing/tester availability has not been independently checked; do not claim Apple approval.
+- Re-ran job actions, employee access and schedule regression checks successfully, plus job-detail syntax and diff whitespace checks. Prior rollback database results remain recorded above; not rerun in this continuation. Real-phone stage selection and deletion confirmation remain to be verified.
