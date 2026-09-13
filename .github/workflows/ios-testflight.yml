@@ -17,6 +17,7 @@ on:
     paths:
       - '.github/workflows/ios-testflight.yml'
       - 'capacitor.config.json'
+      - 'app/**'
       - 'mobile/**'
       - 'scripts/prepare-mobile.mjs'
       - 'package.json'
