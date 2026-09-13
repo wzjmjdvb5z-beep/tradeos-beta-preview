@@ -61,7 +61,7 @@
     }
 
     if(view==='jobs'){
-      box.innerHTML=`<div class="tos-quick-actions">${quick('timesheets','◷','Log time',true)}${quick('schedule','▦','Schedule')}${quick('quotes','＋','New quote')}</div>${filterMarkup('Search jobs…',['All','Booked','In progress','Complete'])}`;
+      box.innerHTML=`<div class="tos-quick-actions">${quick('timesheets','◷','Log time',true)}${quick('schedule','▦','Schedule')}${quick('quotes','＋','New quote')}</div>${filterMarkup('Search jobs…',(document.querySelector('.bottom-nav [data-nav="finance"]')?['All','Ready','In progress','Complete','Bill sent','Bill paid']:['All','Ready','In progress','Complete']))}`;
       bindQuick(box);bindListFilter(box,wrap,'jobs');return box;
     }
 

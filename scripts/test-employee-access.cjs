@@ -16,7 +16,7 @@ async function check(role){
     }};
   let source=fs.readFileSync('app/tradeos-cloud-static.js','utf8').replace('start();','');
   source=source.replace(/\}\)\(\);\s*$/,'this.run=async()=>{data=await bootstrap();return {role:data.activeMembership.role,nav:nav("quotes","£","Quotes")+nav("finance","£","Finance"),jobs:jobs(["owner","admin","manager"].includes(data.activeMembership.role)),team:team(["owner","admin","manager"].includes(data.activeMembership.role))};};})();');
-  const c={window:{supabase:{createClient:()=>sb}},document:{getElementById:()=>null},console,Intl,Date};
+  const c={window:{supabase:{createClient:()=>sb}},document:{getElementById:()=>null,addEventListener(){}},console,Intl,Date};
   vm.createContext(c);vm.runInContext(source,c);
   const result=await c.run();
   assert.equal(result.role,role,'must use the signed-in user, even when owner is first');

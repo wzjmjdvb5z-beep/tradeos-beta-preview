@@ -82,3 +82,15 @@ User confirmed the employee changes work, then reported the schedule showing not
 - Updated schedule-board.js and product-clean-v1.js cache versions to schedule-visibility-1.
 - scripts/test-schedule-visibility.cjs passes employee assignment isolation, escaped job titles and owner scheduling controls. Existing employee-access regression also passes; both changed scripts pass syntax checks and git diff passes whitespace checks.
 - Published as 5aa898e9cd714ff3c556c631a2745094295a78bb. Pages run 34766537394 and smoke checks 34766540475 completed successfully; public HTML serves schedule-visibility-1 assets. Native iOS/TestFlight release was still in progress. Real-phone confirmation is still needed; if a dated owner job is missing, ask which account/date and diagnose that separately.
+
+## Job deletion and stages — 2026-09-13
+
+Ben confirmed schedule seems good, requested Delete jobs and stages Ready → In progress → Complete → Bill sent → Bill paid.
+
+- Added manager-only job-stage selector and Save stage in job details, plus Delete job with explicit in-page permanent-delete confirmation. Lists refresh after successful changes. Existing Booked jobs display as Ready; new jobs use ready.
+- Billing stages are manual tracking labels: they do not send invoices, mark invoice records paid or create payments. Stored separately in job_financials.billing_stage under existing manager RLS so employees continue seeing operational status only (Complete for billed jobs). No automatic invoice-stage sync was implemented.
+- Applied migration job_delete_and_workflow_stages, source scripts/job-actions.sql. manage_job is SECURITY INVOKER, checks active owner/admin/manager membership, locks the company-scoped job, updates operational/private billing stages atomically, or deletes assignments and job in one transaction. Existing invoice/time/cost foreign keys prevent deleting financial history. Timer/update/photo foreign keys now RESTRICT deletion instead of CASCADE; blocked deletion rolls back assignment removal. No real jobs were deleted.
+- Scheduling edits only dates/people now; change stages through Jobs so schedule edits cannot overwrite billing progression.
+- Verification: rollback database tests passed owner stage/billing/reset/delete with temporary assigned job; protected note blocked deletion and retained assignment; employee stage/delete denied and financial rows invisible. scripts/test-job-actions.cjs, test-employee-access.cjs and test-schedule-visibility.cjs pass. JavaScript syntax and whitespace checks pass.
+- Security advisors show pre-existing document-link/definer/leaked-password notices; no manage_job finding (invoker, no anonymous execution). Existing remediation links above apply.
+- Publication pending at this checkpoint; verify Pages and served assets before claiming live. Real-phone job-stage and delete confirmation still need user verification. Apple/TestFlight completion remains separate.

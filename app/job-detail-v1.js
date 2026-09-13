@@ -91,7 +91,7 @@
   }
 
   async function loadJob(jobId,o){
-    const ctx=contextCache||await getContext(); if(!ctx)throw new Error('Your session has expired.');
+    const ctx=await getContext(); if(!ctx)throw new Error('Your session has expired.');
     const [jr,mr,ar,tr,nr,fr]=await Promise.all([
       client.from('jobs').select('id,company_id,customer_id,title,status,address,scheduled_start,scheduled_end,notes,agreed_value,customers(name,email,phone,address)').eq('id',jobId).eq('company_id',ctx.companyId).single(),
       client.from('company_members').select('id,user_id,full_name,role,active').eq('company_id',ctx.companyId).eq('active',true).order('created_at',{ascending:true}),
@@ -102,6 +102,11 @@
     ]);
     if(jr.error)throw jr.error;if(mr.error)throw mr.error;if(ar.error)throw ar.error;if(tr.error)throw tr.error;if(nr.error)throw nr.error;if(fr.error)throw fr.error;
     const state={ctx,job:jr.data,members:mr.data||[],assignments:ar.data||[],entries:tr.data||[],notes:nr.data||[],noteFiles:fr.data||[],photoUrls:{},overlay:o};
+    if(['owner','admin','manager'].includes(ctx.membership.role)){
+      const billing=await client.from('job_financials').select('billing_stage').eq('company_id',ctx.companyId).eq('job_id',jobId).maybeSingle();
+      if(billing.error)throw billing.error;
+      state.job.billing_stage=billing.data?.billing_stage||null;
+    }
     current=state;
     await hydratePhotoUrls(state);
     if(current!==state||!o.isConnected)return;
@@ -138,7 +143,7 @@
       <header class="tos-job-head">
         <button type="button" class="tos-job-back" aria-label="Back to jobs">‹</button>
         <div class="tos-job-head-copy"><span>JOB</span><h2>${esc(job.title||'Job')}</h2></div>
-        <span class="tos-job-status">${esc(job.status||'booked')}</span>
+        <span class="tos-job-status">${esc(jobStage(job))}</span>
       </header>
       <main class="tos-job-body">
         <section class="tos-job-hero-card">
@@ -162,13 +167,40 @@
           <div class="tos-job-time-list">${entries.length?grouped.map(g=>dayGroup(g,members)).join(''):`<div class="tos-job-empty"><strong>No time entered yet</strong><p>Time logged from Timesheets will appear here against this job.</p></div>`}</div>
         </section>
 
+        ${manager?`<section class="tos-job-section"><div class="tos-job-section-head"><div><span>PROGRESS</span><h3>Job stage</h3></div></div><label for="tos-job-stage">Update stage</label><select id="tos-job-stage" class="btn secondary" style="width:100%;margin-top:8px">${['ready','in progress','complete','bill sent','bill paid'].map(v=>`<option value="${v}" ${jobStage(job).toLowerCase()===v?'selected':''}>${v[0].toUpperCase()+v.slice(1)}</option>`).join('')}</select><p class="sub">Billing stages are private to managers. Changing a stage does not send an invoice or record a payment.</p><button type="button" class="btn" id="tos-save-job-stage">Save stage</button><p id="tos-job-action-error" role="alert" hidden></p><hr><button type="button" class="btn secondary" id="tos-delete-job" style="color:#b42318">Delete job</button><div id="tos-delete-confirm" hidden><p>Delete <strong>${esc(job.title)}</strong>? This permanently removes the job, its schedule and assignments. This cannot be undone. Jobs with recorded time, invoices, costs or updates are protected.</p><button type="button" class="btn secondary" id="tos-cancel-delete">Keep job</button> <button type="button" class="btn" id="tos-confirm-delete" style="background:#b42318">Delete permanently</button></div></section>`:''}
         ${notesSectionHtml()}
 
         ${customer?`<section class="tos-job-section tos-job-customer"><div class="tos-job-section-head"><div><span>CUSTOMER</span><h3>${esc(customer.name||'Customer')}</h3></div></div><div class="tos-job-contact">${customer.email?`<span>${esc(customer.email)}</span>`:''}${customer.phone?`<span>${esc(customer.phone)}</span>`:''}${customer.address?`<span>${esc(customer.address)}</span>`:''}</div></section>`:''}
       </main>`;
     page.querySelector('.tos-job-back')?.addEventListener('click',closeJob);
     page.querySelector('.tos-job-manage-team')?.addEventListener('click',openManageTeam);
+    page.querySelector('#tos-save-job-stage')?.addEventListener('click',()=>performJobAction('stage',page.querySelector('#tos-job-stage').value));
+    page.querySelector('#tos-delete-job')?.addEventListener('click',()=>{page.querySelector('#tos-delete-confirm').hidden=false;page.querySelector('#tos-delete-job').hidden=true;page.querySelector('#tos-cancel-delete').focus();});
+    page.querySelector('#tos-cancel-delete')?.addEventListener('click',()=>{page.querySelector('#tos-delete-confirm').hidden=true;page.querySelector('#tos-delete-job').hidden=false;});
+    page.querySelector('#tos-confirm-delete')?.addEventListener('click',()=>performJobAction('delete'));
     bindNotesSection(page.querySelector('#tos-job-updates'));
+  }
+
+  function jobStage(job){const s=job.billing_stage||job.status||'ready';return s==='booked'?'Ready':s[0].toUpperCase()+s.slice(1);}
+  async function performJobAction(action,stage=null){
+    const state=current;
+    if(!state||state.saving||!['owner','admin','manager'].includes(state.ctx.membership.role))return;
+    state.saving=true;
+    const buttons=state.overlay.querySelectorAll('#tos-save-job-stage,#tos-confirm-delete');
+    buttons.forEach(b=>b.disabled=true);
+    const error=state.overlay.querySelector('#tos-job-action-error');error.hidden=true;
+    try{
+      const r=await client.rpc('manage_job',{target_company:state.ctx.companyId,target_job:state.job.id,job_action:action,next_stage:stage});
+      if(r.error)throw r.error;if(r.data!==state.job.id)throw new Error('The job was not changed. Please refresh and try again.');
+      jobsCache=[];
+      if(current===state){
+        if(action==='delete')closeJob();
+        else{state.job.status=['bill sent','bill paid'].includes(stage)?'complete':stage;state.job.billing_stage=['bill sent','bill paid'].includes(stage)?stage:null;renderJob();}
+      }
+      document.dispatchEvent(new CustomEvent('tradeos:jobs-changed'));
+      toast(action==='delete'?'Job deleted':'Job stage updated');
+    }catch(e){if(current===state){error.textContent=e.message||'Could not update the job.';error.hidden=false;}}
+    finally{state.saving=false;buttons.forEach(b=>b.disabled=false);}
   }
 
   function notesSectionHtml(){
