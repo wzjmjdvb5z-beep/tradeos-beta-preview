@@ -5,8 +5,8 @@
   "description": "TradeOS iOS shell and mobile build tooling",
   "scripts": {
     "mobile:prepare": "node scripts/prepare-mobile.mjs",
-    "ios:generate": "npm run mobile:prepare && npx cap add ios",
-    "ios:sync": "npm run mobile:prepare && npx cap sync ios"
+    "ios:generate": "npm run mobile:prepare && npx cap add ios && node scripts/install-native-ios.mjs",
+    "ios:sync": "npm run mobile:prepare && npx cap sync ios && node scripts/install-native-ios.mjs"
   },
   "dependencies": {
     "@capacitor/app": "^8.0.0",

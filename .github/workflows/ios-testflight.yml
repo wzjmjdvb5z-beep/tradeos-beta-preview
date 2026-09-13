@@ -70,6 +70,7 @@ jobs:
           rm -rf ios
           npx cap add ios
           npx cap sync ios
+          node scripts/install-native-ios.mjs
 
       - name: Declare exempt encryption usage
         shell: bash

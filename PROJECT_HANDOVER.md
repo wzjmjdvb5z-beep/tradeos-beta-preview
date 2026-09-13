@@ -106,3 +106,7 @@ Publication evidence: release-readiness-1 published as 0b13ddb389e78cb596c989f28
 ## Device/build checkpoint
 
 Ben confirms he uses both Safari and TestFlight. Run 34780998630 for 0b13ddb389e78cb596c989f2822af1cff8d12d44 completed successfully, including validation and TestFlight upload. Push-run defaults identify version 1.0 build 17. Availability after Apple processing is not independently verified. Ask him to use 1.0 (17) or newer when testing the latest invoice print fix, and compare the same invoice in Safari. Do not treat use of both platforms as confirmation that all checks passed.
+
+## Native invoice popup failure — 13 September 2026
+
+Ben supplied a TestFlight screenshot showing the popup error after Print / Save PDF; he then confirmed Safari works. Native window.open is unavailable; do not ask him to enable popups in the installed app. Replaced native path with a local Capacitor InvoiceExport plugin that renders paginated A4 PDF and presents UIActivityViewController (Save to Files / Print). Temporary PDF is removed when sharing finishes or cancels; no public link or external upload is created. Native installer registers a custom bridge controller in generated storyboard and app target; both build workflows invoke installer after cap sync. Web popup printing remains. Commercial regression verifies native bridge gets invoice HTML without calling window.open. All four JS regressions pass; Swift build/upload and actual iPhone PDF layout pending. Native changes require a new TestFlight build. Preserve Safari as user-confirmed working.

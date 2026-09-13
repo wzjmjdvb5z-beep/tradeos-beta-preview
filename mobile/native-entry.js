@@ -1,9 +1,11 @@
 import { App } from '@capacitor/app';
 import { Browser } from '@capacitor/browser';
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, registerPlugin } from '@capacitor/core';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { Share } from '@capacitor/share';
 import { SplashScreen } from '@capacitor/splash-screen';
+
+const InvoiceExport = registerPlugin('InvoiceExport');
 
 if (Capacitor.isNativePlatform()) {
   document.documentElement.classList.add('tradeos-native');
@@ -88,6 +90,7 @@ if (Capacitor.isNativePlatform()) {
     isNative: true,
     platform: Capacitor.getPlatform(),
     share: nativeShare,
+    exportInvoice: (options) => InvoiceExport.exportPDF(options),
     openExternal,
     haptic: () => Haptics.impact({ style: ImpactStyle.Medium })
   });

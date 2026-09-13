@@ -79,6 +79,7 @@ jobs:
           rm -rf ios
           npx cap add ios
           npx cap sync ios
+          node scripts/install-native-ios.mjs
 
       - name: Verify Apple identity and privacy manifests
         shell: bash
