@@ -148,6 +148,7 @@
         <span class="tos-job-status">${esc(jobStage(job))}</span>
       </header>
       <main class="tos-job-body">
+        ${manager?`<section class="tos-job-section"><div class="tos-job-section-head"><div><span>PROGRESS</span><h3>Job stage</h3></div></div><label for="tos-job-stage">Update stage</label><select id="tos-job-stage" class="btn secondary" style="width:100%;margin-top:8px">${['ready','in progress','complete','bill sent','bill paid'].map(v=>`<option value="${v}" ${jobStage(job).toLowerCase()===v?'selected':''}>${v[0].toUpperCase()+v.slice(1)}</option>`).join('')}</select><p class="sub">Billing stages are private to managers. Changing a stage does not send an invoice or record a payment.</p><button type="button" class="btn" id="tos-save-job-stage">Save stage</button><p id="tos-job-action-error" role="alert" hidden></p><hr><button type="button" class="btn secondary" id="tos-delete-job" style="color:#b42318">Delete job</button><div id="tos-delete-confirm" hidden><p>Delete <strong>${esc(job.title)}</strong>? This permanently removes the job, its schedule and assignments. This cannot be undone. Jobs with recorded time, invoices, costs or updates are protected.</p><button type="button" class="btn secondary" id="tos-cancel-delete">Keep job</button> <button type="button" class="btn" id="tos-confirm-delete" style="background:#b42318">Delete permanently</button></div></section>`:''}
         <section class="tos-job-hero-card">
           <div class="tos-job-address">${esc(job.address||customer?.address||'No address added')}</div>
           <div class="tos-job-metrics">
@@ -169,7 +170,7 @@
           <div class="tos-job-time-list">${entries.length?grouped.map(g=>dayGroup(g,members)).join(''):`<div class="tos-job-empty"><strong>No time entered yet</strong><p>Time logged from Timesheets will appear here against this job.</p></div>`}</div>
         </section>
 
-        ${manager?`<section class="tos-job-section"><div class="tos-job-section-head"><div><span>PROGRESS</span><h3>Job stage</h3></div></div><label for="tos-job-stage">Update stage</label><select id="tos-job-stage" class="btn secondary" style="width:100%;margin-top:8px">${['ready','in progress','complete','bill sent','bill paid'].map(v=>`<option value="${v}" ${jobStage(job).toLowerCase()===v?'selected':''}>${v[0].toUpperCase()+v.slice(1)}</option>`).join('')}</select><p class="sub">Billing stages are private to managers. Changing a stage does not send an invoice or record a payment.</p><button type="button" class="btn" id="tos-save-job-stage">Save stage</button><p id="tos-job-action-error" role="alert" hidden></p><hr><button type="button" class="btn secondary" id="tos-delete-job" style="color:#b42318">Delete job</button><div id="tos-delete-confirm" hidden><p>Delete <strong>${esc(job.title)}</strong>? This permanently removes the job, its schedule and assignments. This cannot be undone. Jobs with recorded time, invoices, costs or updates are protected.</p><button type="button" class="btn secondary" id="tos-cancel-delete">Keep job</button> <button type="button" class="btn" id="tos-confirm-delete" style="background:#b42318">Delete permanently</button></div></section>`:''}
+
         ${notesSectionHtml()}
 
         ${customer?`<section class="tos-job-section tos-job-customer"><div class="tos-job-section-head"><div><span>CUSTOMER</span><h3>${esc(customer.name||'Customer')}</h3></div></div><div class="tos-job-contact">${customer.email?`<span>${esc(customer.email)}</span>`:''}${customer.phone?`<span>${esc(customer.phone)}</span>`:''}${customer.address?`<span>${esc(customer.address)}</span>`:''}</div></section>`:''}
@@ -177,7 +178,7 @@
     page.querySelector('.tos-job-back')?.addEventListener('click',closeJob);
     page.querySelector('.tos-job-manage-team')?.addEventListener('click',openManageTeam);
     page.querySelector('#tos-save-job-stage')?.addEventListener('click',()=>performJobAction('stage',page.querySelector('#tos-job-stage').value));
-    page.querySelector('#tos-delete-job')?.addEventListener('click',()=>{page.querySelector('#tos-delete-confirm').hidden=false;page.querySelector('#tos-delete-job').hidden=true;page.querySelector('#tos-cancel-delete').focus();});
+    page.querySelector('#tos-delete-job')?.addEventListener('click',()=>{page.querySelector('#tos-delete-confirm').hidden=false;page.querySelector('#tos-delete-job').hidden=true;page.querySelector('#tos-delete-confirm').scrollIntoView({block:'center'});page.querySelector('#tos-cancel-delete').focus({preventScroll:true});});
     page.querySelector('#tos-cancel-delete')?.addEventListener('click',()=>{page.querySelector('#tos-delete-confirm').hidden=true;page.querySelector('#tos-delete-job').hidden=false;});
     page.querySelector('#tos-confirm-delete')?.addEventListener('click',()=>performJobAction('delete'));
     bindNotesSection(page.querySelector('#tos-job-updates'));
@@ -201,7 +202,7 @@
       }
       document.dispatchEvent(new CustomEvent('tradeos:jobs-changed'));
       toast(action==='delete'?'Job deleted':'Job stage updated');
-    }catch(e){if(current===state){error.textContent=e.message||'Could not update the job.';error.hidden=false;}}
+    }catch(e){if(current===state){error.textContent=e.message||'Could not update the job.';error.hidden=false;error.scrollIntoView?.({block:'center'});}}
     finally{state.saving=false;buttons.forEach(b=>b.disabled=false);}
   }
 

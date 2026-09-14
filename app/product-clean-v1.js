@@ -210,6 +210,8 @@
     wrap.classList.add('tos-clean-timesheets');
   }
 
+  function esc(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
   function actionCard({className='',icon='＋',title,detail,action}){
     const button=document.createElement('button');
     button.type='button';

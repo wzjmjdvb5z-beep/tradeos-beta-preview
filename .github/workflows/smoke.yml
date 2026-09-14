@@ -37,6 +37,7 @@ jobs:
           node scripts/test-employee-access.cjs
           node scripts/test-schedule-visibility.cjs
           node scripts/test-job-actions.cjs
+          node scripts/test-clean-actions.cjs
           node scripts/test-commercial-readiness.cjs
           node scripts/test-commercial-loading.cjs
           node scripts/test-member-name.cjs

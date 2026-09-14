@@ -1,3 +1,13 @@
 body.tos-com-sheet-open{overflow:hidden}
 .tos-job-note-sheet,.tos-job-note-confirm,.tos-job-photo-viewer{display:none!important;pointer-events:none!important}
 body:not(:has(.bottom-nav)) .tos-br-fab{display:none!important}
+
+/* Explicit destructive actions and reliable hidden states across theme overrides. */
+.tos-job-detail [hidden],.tos-rates-card [hidden]{display:none!important}
+.tos-job-detail #tos-delete-job,.tos-job-detail #tos-confirm-delete{background:#b42318!important;color:#fff!important;border:1px solid #b42318!important;min-height:48px;width:100%;margin-top:12px}
+.tos-job-detail #tos-delete-confirm{padding:16px;border:1px solid #f3b5b0;border-radius:16px;background:#fff6f5;color:#7a271a}
+.tos-job-detail #tos-job-action-error{color:#b42318;background:#fff1f0;padding:12px;border-radius:12px}
+.tos-rate-editor .tos-rate-input-wrap{min-width:0}
+.tos-rate-editor .tos-rate-input{box-sizing:border-box}
+.topbar .logo.veystead-mark{background:#153d38!important;box-shadow:none!important;border-radius:50%!important;color:#e5f1e9!important}
+.veystead-mark svg{width:76%;height:76%;display:block}
