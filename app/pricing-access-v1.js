@@ -117,7 +117,7 @@
     const checked=automatic;
     const label=automatic?'Always allowed':checked?'Pricing visible':'Pricing hidden';
     return `<div class="tos-pricing-row">
-      <div class="tos-pricing-person"><strong>${esc(m.full_name||pretty(m.role))}</strong><small>${esc(pretty(m.role))}</small></div>
+      <div class="tos-pricing-person"><strong>${esc(m.full_name||'Name not set')}</strong><small>${esc(pretty(m.role))}</small></div>
       <label class="tos-pricing-switch ${automatic?'is-locked':''}">
         <span data-pricing-label="${esc(m.id)}">${esc(label)}</span>
         <input type="checkbox" data-pricing-toggle="${esc(m.id)}" ${checked?'checked':''} disabled aria-label="Pricing access for ${esc(m.full_name||'team member')}">

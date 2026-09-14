@@ -39,6 +39,7 @@ jobs:
           node scripts/test-job-actions.cjs
           node scripts/test-commercial-readiness.cjs
           node scripts/test-commercial-loading.cjs
+          node scripts/test-member-name.cjs
 
       - name: Verify idle UI and live updates in browser
         run: |
