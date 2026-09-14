@@ -194,10 +194,13 @@
 
   function openInvoiceCreate(ctx){
     const activeInvoiceJobs=new Set(ctx.invoices.filter(i=>i.status!=='void'&&i.job_id).map(i=>i.job_id));
-    const eligible=ctx.jobs.filter(j=>num(j.agreed_value)>0&&!activeInvoiceJobs.has(j.id));
+    // Job prices are private; the existing manager-only profitability result supplies them.
+    const values=new Map((ctx.profitability||[]).map(p=>[p.job_id,p.agreed_value]));
+    const eligible=ctx.jobs.map(j=>({...j,agreed_value:values.get(j.id)??j.agreed_value}))
+      .filter(j=>(num(j.agreed_value)>0||j.quote_id)&&!activeInvoiceJobs.has(j.id));
     const overlay=sheet('NEW INVOICE','Create an invoice','Choose a job and the due date.');
     const body=overlay.querySelector('.tos-com-sheet-body');
-    body.innerHTML=eligible.length?`<form id="tos-com-invoice-form" class="tos-com-form"><div class="tos-com-form-section"><label>Job<select name="jobId" required><option value="">Choose a job…</option>${eligible.map(j=>`<option value="${esc(j.id)}">${esc(j.title)} · ${money.format(num(j.agreed_value))} net</option>`).join('')}</select></label><label>Due date<input name="dueDate" type="date" value="${futureIso(14)}" required></label></div><div class="tos-com-info-box">TradeOS creates the invoice from the job's agreed value. Jobs created from a quote keep the quote VAT.</div><div class="tos-com-form-error" data-form-error hidden></div><button class="tos-com-save" type="submit">Create invoice</button></form>`:emptyState('No jobs ready to invoice','A job needs an agreed value and must not already have an active invoice.');
+    body.innerHTML=eligible.length?`<form id="tos-com-invoice-form" class="tos-com-form"><div class="tos-com-form-section"><label>Job<select name="jobId" required><option value="">Choose a job…</option>${eligible.map(j=>`<option value="${esc(j.id)}">${esc(j.title)} · ${j.quote_id?'From linked quote':money.format(num(j.agreed_value))+' net'}</option>`).join('')}</select></label><label>Due date<input name="dueDate" type="date" value="${futureIso(14)}" required></label></div><div class="tos-com-info-box">Veystead creates the invoice from the job's agreed value. Jobs created from a quote keep the quote VAT.</div><div class="tos-com-form-error" data-form-error hidden></div><button class="tos-com-save" type="submit">Create invoice</button></form>`:emptyState('No jobs ready to invoice','A job needs an agreed value and must not already have an active invoice.');
     document.body.appendChild(overlay);
     body.querySelector('#tos-com-invoice-form')?.addEventListener('submit',async e=>{
       e.preventDefault();const form=e.currentTarget,fd=new FormData(form),btn=form.querySelector('.tos-com-save'),err=form.querySelector('[data-form-error]');

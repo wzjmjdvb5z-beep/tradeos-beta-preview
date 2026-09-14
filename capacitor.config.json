@@ -1,6 +1,6 @@
 {
   "appId": "uk.co.benjaminchurchill.fieldservice",
-  "appName": "TradeOS Beta",
+  "appName": "Veystead",
   "webDir": "mobile-web",
   "bundledWebRuntime": false,
   "ios": {

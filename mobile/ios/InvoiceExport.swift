@@ -43,9 +43,53 @@ public class InvoiceExportPlugin: CAPPlugin, CAPBridgedPlugin {
     public let identifier = "InvoiceExportPlugin"
     public let jsName = "InvoiceExport"
     public let pluginMethods: [CAPPluginMethod] = [
-        CAPPluginMethod(name: "exportPDF", returnType: CAPPluginReturnPromise)
+        CAPPluginMethod(name: "exportPDF", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "exportCSV", returnType: CAPPluginReturnPromise)
     ]
     private var exporting = false
+
+    @objc func exportCSV(_ call: CAPPluginCall) {
+        guard let csv = call.getString("csv"), !csv.isEmpty, csv.utf8.count <= 5_000_000 else {
+            call.reject("The CSV could not be prepared for export.")
+            return
+        }
+        let title = call.getString("title") ?? "Veystead-payroll"
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self, let presenter = self.bridge?.viewController else {
+                call.reject("The export screen is unavailable. Please reopen it.")
+                return
+            }
+            guard !self.exporting, presenter.presentedViewController == nil else {
+                call.reject("Close the current share sheet before exporting again.")
+                return
+            }
+            self.exporting = true
+            let directory = FileManager.default.temporaryDirectory.appendingPathComponent("csv-" + UUID().uuidString, isDirectory: true)
+            let safeTitle = String(title.unicodeScalars.map { CharacterSet.alphanumerics.contains($0) || $0 == "-" ? String($0) : "_" }.joined().prefix(80))
+            let file = directory.appendingPathComponent((safeTitle.isEmpty ? "Veystead-payroll" : safeTitle) + ".csv")
+            do {
+                try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+                try csv.write(to: file, atomically: true, encoding: .utf8)
+                let share = UIActivityViewController(activityItems: [file], applicationActivities: nil)
+                if let popover = share.popoverPresentationController {
+                    popover.sourceView = presenter.view
+                    popover.sourceRect = CGRect(x: presenter.view.bounds.midX, y: presenter.view.bounds.midY, width: 1, height: 1)
+                    popover.permittedArrowDirections = []
+                }
+                share.completionWithItemsHandler = { [weak self] _, completed, _, error in
+                    try? FileManager.default.removeItem(at: directory)
+                    self?.exporting = false
+                    if let error = error { call.reject(error.localizedDescription) }
+                    else { call.resolve(["completed": completed]) }
+                }
+                presenter.present(share, animated: true)
+            } catch {
+                try? FileManager.default.removeItem(at: directory)
+                self.exporting = false
+                call.reject("The CSV could not be saved: " + error.localizedDescription)
+            }
+        }
+    }
 
     @objc func exportPDF(_ call: CAPPluginCall) {
         guard let html = call.getString("html"), !html.isEmpty, html.utf8.count <= 2_000_000 else {

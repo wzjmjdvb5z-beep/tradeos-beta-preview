@@ -140,3 +140,17 @@ Ben asks to identify employees instead of generic Employee label. accept_my_comp
 Ben owns Veystead.com, Veystead.uk and Veystead.co.uk; asks how to trademark name (no filing/clearance yet, no DNS changes). Requests distinct top logo, red/easier working deletion, rate overlap fix. Screenshot feedback reports ReferenceError missing esc on Jobs; product-clean-v1 called esc in action cards/sheets without defining it. Added scoped HTML escaping helper. Moved job actions to top of detail, explicit red/hidden styles, scroll confirmation and failure into view; retained existing confirmation and backend history protections. Removed redundant overlay pound prefix from rate input (label still £/hr), enforced collapsed rates hidden. Top header now Veystead with green/gold nested V vector. Store metadata/icon/bundle ID not renamed. New build marker veystead-fixes-1. Need actual phone delete confirmation and protected/success cases verified; do not claim screenshot proves deletion root cause. User requests reduced usage: batch checks, no repeated Apple polling. Publication/testing results below.
 
 Validation: targeted JS tests passed for action-card escaping, rendered delete open/cancel controls, permission guard, RPC error display and refresh after success; syntax/diff checks passed. Real-device deletion and layout pending. Publishing one batched update; do not infer Apple availability from push.
+
+
+## Current release blockers — 14 September 2026 (Veystead)
+Ben reports deletion still failing, invoice creation failing, privacy/back native crash, CSV export failing, double-tap zoom and intermittent timesheet submission errors. Previous passing synthetic tests did not establish device success.
+
+Prepared changes: invoice picker uses existing manager profitability values (live aggregate: 12/13 jobs have zero public agreed_value with positive private/quote value); quote-linked jobs remain selectable, server creates invoice. Native privacy opens the public policy in Capacitor Browser without leaving the app shell. Native CSV uses InvoiceExport.exportCSV with local temporary file/share sheet and cleanup. touch-action manipulation preserves pinch zoom. Timesheet submission has per-sheet duplicate guard, captured state, lost-response reconciliation, persistent status/error. Delete action gains pending text and explicit error; underlying device failure remains unidentified. Eight jobs have time/invoices/notes; existing FK protections retained. No actual jobs deleted or financial history removed.
+Veystead native display name, boot/setup/privacy text updated, bundle ID unchanged. Store icon/metadata and remaining branding need audit.
+CI regression and iOS compile/runtime results pending. Must not call all blockers fixed before checking candidate. Real phone verification is required.
+
+Subscription: see SUBSCRIPTION_PROPOSAL.md. No live plan or charges changed. Confirm trial, included owner/seat counting, larger tiers, VAT and existing subscriber treatment.
+
+Trademark: submitted application UK00004444915 on 14 September 2026, reference VEYSTEAD-001, Classes 9 and 42. Not registered/cleared; examination payment route unverified.
+Domains: user confirmed veystead.com/app works, GitHub DNS successful and HTTPS enforced. UK domain redirects saved at Porkbun but Safari TLS failed; not verified resolved. Preserve MX/TXT email records.
+Latest previously inspected TestFlight upload workflow: build 23 succeeded for ac573550; Apple tester availability and App Store approval not confirmed.

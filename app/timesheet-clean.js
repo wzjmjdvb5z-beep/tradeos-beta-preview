@@ -155,7 +155,7 @@
         <div class="tos-summary-card"><small>Selected day</small><strong>${fmtHours(dayTotals[selectedDate]||0)}h</strong></div>
         <div class="tos-summary-card"><small>Jobs used</small><strong>${jobsUsed}</strong></div>
       </div>
-      ${locked?'':submitted?`<div class="tos-lock-note"><strong>Waiting for approval.</strong> Editing is still available. If you make a correction, TradeOS will return the week to Draft automatically.</div>`:`<button class="tos-submit" id="tos-submit" ${total<=0||!ctx.sheet?.id?'disabled':''}>Submit week</button>`}
+      ${locked?'':submitted?`<div class="tos-lock-note"><strong>Waiting for approval.</strong> Editing is still available. If you make a correction, Veystead will return the week to Draft automatically.</div>`:`<button class="tos-submit" id="tos-submit" ${total<=0||!ctx.sheet?.id?'disabled':''}>Submit week</button>`}
     `;
     shell.querySelectorAll('[data-tos-date]').forEach(b=>b.addEventListener('click',()=>{selectedDate=b.dataset.tosDate;render(shell)}));
     shell.querySelector('#tos-prev')?.addEventListener('click',()=>ctx.sourceCard.querySelector('#prev')?.click());
@@ -241,11 +241,45 @@
     }catch(err){setError(errorBox,prettyError(err));btn.disabled=false;btn.textContent='Remove';}
   }
 
+  const submittingSheets=new Set();
   async function submitWeek(){
-    if(!ctx.sheet?.id)return;
+    const state=ctx,id=state?.sheet?.id;
+    if(!id||submittingSheets.has(id))return;
+    submittingSheets.add(id);
     const btn=document.querySelector('#tos-submit');
-    try{if(btn){btn.disabled=true;btn.textContent='Submitting…'}const {error}=await client.rpc('submit_weekly_timesheet',{target_weekly_timesheet:ctx.sheet.id});if(error)throw error;await reloadData();render();showToast('Timesheet submitted for approval');}catch(err){if(btn){btn.disabled=false;btn.textContent='Submit week'}showToast(prettyError(err),true)}
+    const report=(message,isError=false)=>{
+      if(ctx!==state)return;
+      render();
+      const shell=document.querySelector('.tos-ts');
+      if(shell){
+        const notice=document.createElement('p');
+        notice.className='tos-lock-note';
+        notice.setAttribute('role',isError?'alert':'status');
+        notice.textContent=message;
+        shell.appendChild(notice);
+      }
+    };
+    try{
+      if(btn){btn.disabled=true;btn.textContent='Submitting…';}
+      const {error}=await client.rpc('submit_weekly_timesheet',{target_weekly_timesheet:id});
+      if(error)throw error;
+      // The write succeeded even if the following refresh loses its connection.
+      state.sheet.status='submitted';
+      try{await reloadData(state);}catch(_){}
+      report('Timesheet submitted for approval');
+    }catch(err){
+      // A lost response or repeat tap must not report failure after a successful write.
+      let refreshed=false;
+      try{await reloadData(state);refreshed=true;}catch(_){}
+      if(refreshed&&['submitted','approved'].includes(state.sheet?.status)){
+        report(state.sheet.status==='approved'?'Timesheet already approved':'Timesheet submitted for approval');
+      }else{report(prettyError(err),true);}
+    }finally{
+      submittingSheets.delete(id);
+      if(btn?.isConnected){btn.disabled=false;btn.textContent='Submit week';}
+    }
   }
+
   async function reopenWeek(){
     if(!ctx.sheet?.id)return;
     const btn=document.querySelector('#tos-reopen');

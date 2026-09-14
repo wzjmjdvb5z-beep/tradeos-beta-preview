@@ -11,3 +11,6 @@ body:not(:has(.bottom-nav)) .tos-br-fab{display:none!important}
 .tos-rate-editor .tos-rate-input{box-sizing:border-box}
 .topbar .logo.veystead-mark{background:#153d38!important;box-shadow:none!important;border-radius:50%!important;color:#e5f1e9!important}
 .veystead-mark svg{width:76%;height:76%;display:block}
+
+/* Avoid double-tap zoom while preserving pinch zoom and scrolling. */
+html, body { touch-action: manipulation; }

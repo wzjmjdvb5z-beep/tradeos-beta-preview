@@ -68,11 +68,11 @@
       <div class="tos-account-privacy-handle"></div>
       <div class="tos-account-privacy-head"><div><h3>Account &amp; privacy</h3><p>Privacy information and account controls.</p></div><button type="button" class="tos-account-privacy-close" aria-label="Close">×</button></div>
       <div class="tos-account-privacy-card">
-        <h4>Privacy policy</h4><p>See what information TradeOS processes, why it is used and how to make a privacy request.</p>
-        <a class="tos-account-privacy-link" href="../privacy.html">Read privacy policy</a>
+        <h4>Privacy policy</h4><p>See what information Veystead processes, why it is used and how to make a privacy request.</p>
+        <a class="tos-account-privacy-link" href="../privacy.html">Read privacy policy</a><p class="tos-privacy-error" role="alert" hidden></p>
       </div>
       <div class="tos-account-privacy-card tos-account-delete-card">
-        <h4>Delete account</h4><p>Request deletion of your TradeOS user account and associated personal data. Requests are scheduled for completion within seven days, subject to records that must lawfully be retained and any business-workspace ownership that must be resolved.</p>
+        <h4>Delete account</h4><p>Request deletion of your Veystead user account and associated personal data. Requests are scheduled for completion within seven days, subject to records that must lawfully be retained and any business-workspace ownership that must be resolved.</p>
         <button type="button" class="tos-account-delete-start">Request account deletion</button>
         <p class="tos-account-delete-note">If your business has a web subscription, account deletion does not itself create a new purchase or charge. Any subscription or workspace ownership that needs attention will be handled as part of the deletion process.</p>
         <div class="tos-account-delete-result" hidden></div>
@@ -81,6 +81,14 @@
     document.body.appendChild(overlay);
     document.body.classList.add('tos-account-privacy-open');
 
+    overlay.querySelector('.tos-account-privacy-link')?.addEventListener('click',async e=>{
+      if(!window.tradeOSNative?.isNative)return;
+      e.preventDefault();
+      const error=overlay.querySelector('.tos-privacy-error');
+      error.hidden=true;
+      try{await window.tradeOSNative.openExternal('https://veystead.com/privacy.html');}
+      catch(_){error.textContent='Could not open the privacy policy. Please try again.';error.hidden=false;}
+    });
     overlay.querySelector('.tos-account-privacy-close')?.addEventListener('click',closeSheet);
     overlay.addEventListener('click',e=>{if(e.target===overlay)closeSheet();});
     overlay.querySelector('.tos-account-delete-start')?.addEventListener('click',()=>confirmDeletion(overlay));

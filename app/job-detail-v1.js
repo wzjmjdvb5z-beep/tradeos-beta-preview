@@ -191,6 +191,8 @@
     state.saving=true;
     const buttons=state.overlay.querySelectorAll('#tos-save-job-stage,#tos-confirm-delete');
     buttons.forEach(b=>b.disabled=true);
+    const deleteButton=state.overlay.querySelector('#tos-confirm-delete');
+    if(action==='delete'&&deleteButton)deleteButton.textContent='Deleting…';
     const error=state.overlay.querySelector('#tos-job-action-error');error.hidden=true;
     try{
       const r=await client.rpc('manage_job',{target_company:state.ctx.companyId,target_job:state.job.id,job_action:action,next_stage:stage});
@@ -202,8 +204,8 @@
       }
       document.dispatchEvent(new CustomEvent('tradeos:jobs-changed'));
       toast(action==='delete'?'Job deleted':'Job stage updated');
-    }catch(e){if(current===state){error.textContent=e.message||'Could not update the job.';error.hidden=false;error.scrollIntoView?.({block:'center'});}}
-    finally{state.saving=false;buttons.forEach(b=>b.disabled=false);}
+    }catch(e){if(current===state){error.textContent=(action==='delete'?'Job was not deleted. ':'')+(e.message||'Could not update the job.');error.hidden=false;error.scrollIntoView?.({block:'center'});}}
+    finally{state.saving=false;buttons.forEach(b=>b.disabled=false);if(deleteButton)deleteButton.textContent='Delete permanently';}
   }
 
   function notesSectionHtml(){
