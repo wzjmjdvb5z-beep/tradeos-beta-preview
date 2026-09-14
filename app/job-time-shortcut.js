@@ -201,7 +201,7 @@
   function cssEsc(v){return window.CSS?.escape?CSS.escape(String(v)):String(v).replace(/[^a-zA-Z0-9_-]/g,'\\$&');}
   function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
-  new MutationObserver(schedule).observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['class','data-job-id']});
+  new MutationObserver(mutations=>{if(mutations.some(m=>m.type!=='attributes'||m.oldValue!==m.target.getAttribute(m.attributeName)))schedule();}).observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeOldValue:true,attributeFilter:['class','data-job-id']});
   document.addEventListener('DOMContentLoaded',schedule,{once:true});
   ensureStyles();schedule();
 })();

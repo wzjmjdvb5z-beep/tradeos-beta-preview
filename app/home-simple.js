@@ -1,5 +1,6 @@
 (()=>{
   let queued=false;
+  const rendered=new WeakMap();
 
   function schedule(){
     if(queued)return;
@@ -17,8 +18,8 @@
     wrap.dataset.homeSimple='1';
     const title=hero.querySelector('h2');
     const sub=hero.querySelector('.sub');
-    if(title)title.textContent='Today.';
-    if(sub)sub.textContent='The essentials, nothing else.';
+    if(title&&title.textContent!=='Today.')title.textContent='Today.';
+    if(sub&&sub.textContent!=='The essentials, nothing else.')sub.textContent='The essentials, nothing else.';
 
     const stats=[...wrap.querySelectorAll(':scope > .stats .stat')].map(card=>({
       label:(card.querySelector('span')?.textContent||'').trim(),
@@ -36,6 +37,9 @@
       hero.insertAdjacentElement('afterend',panel);
     }
 
+    const signature=JSON.stringify([primary,useful,hasQuotes]);
+    if(rendered.get(panel)===signature)return;
+    rendered.set(panel,signature);
     panel.innerHTML=`
       <div class="tos-home-actions">
         <button class="tos-home-action primary" type="button" data-home-nav="timesheets"><span class="tos-home-action-icon">◷</span><span>Log time</span></button>
@@ -60,6 +64,6 @@
   function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
   function cssEsc(v){return window.CSS?.escape?CSS.escape(String(v)):String(v).replace(/[^a-zA-Z0-9_-]/g,'\\$&');}
 
-  new MutationObserver(schedule).observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});
+  new MutationObserver(mutations=>{if(mutations.some(m=>m.type!=='attributes'||m.oldValue!==m.target.getAttribute(m.attributeName)))schedule();}).observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeOldValue:true,attributeFilter:['class']});
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
 })();

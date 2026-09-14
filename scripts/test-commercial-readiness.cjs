@@ -1,6 +1,6 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 let source=fs.readFileSync('app/commercial-v1.js','utf8');
-source=source.replace('  new MutationObserver(schedule)', '  globalThis.api={printInvoice,displayInvoiceStatus,reload,setLoader(fn){loadContext=fn;},setDraw(fn){drawQuotes=fn;drawFinance=fn;}};\n  new MutationObserver(schedule)');
+source=source.replace('  new MutationObserver(', '  globalThis.api={printInvoice,displayInvoiceStatus,reload,setLoader(fn){loadContext=fn;},setDraw(fn){drawQuotes=fn;drawFinance=fn;}};\n  new MutationObserver(');
 let opened=0,html='',printed=0,focused=0,load,nav='quotes',draws=[];
 const elements=[];
 const popup={closed:false,focus(){focused++;},print(){printed++;},addEventListener(name,fn){if(name==='load')load=fn;},document:{open(){},write(s){html=s;},close(){load();},createElement(tag){const el={tag,addEventListener(name,fn){this[name]=fn;}};elements.push(el);return el;},body:{prepend(){}},head:{appendChild(){}}}};

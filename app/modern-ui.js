@@ -11,6 +11,7 @@
     signout:'<svg viewBox="0 0 24 24"><path d="M10 4H5v16h5M14 8l4 4-4 4M8 12h10"/></svg>'
   };
   let scheduled=false;
+  const navStates=new WeakMap();
   const descriptions={
     schedule:'Plan jobs and allocate the team',
     timesheets:'Hours, timers and weekly timesheets',
@@ -25,6 +26,10 @@
     if(!nav)return;
     const buttons=[...nav.querySelectorAll('[data-nav]')];
     if(!buttons.length)return;
+    const signature=JSON.stringify([document.querySelector('.beta')?.textContent||'',buttons.map(b=>[b.dataset.nav,b.classList.contains('active')])]);
+    const previous=navStates.get(nav);
+    if(previous?.signature===signature && previous.buttons.length===buttons.length && buttons.every((b,i)=>b===previous.buttons[i]) && (previous.more===null || previous.more.isConnected))return;
+    navStates.set(nav,{signature,buttons,more:null});
     buttons.forEach(button=>{
       const key=button.dataset.nav;
       const holder=button.querySelector('b');
@@ -55,6 +60,7 @@
     more.innerHTML=`<b>${icons.more}</b><span>More</span>`;
     more.addEventListener('click',()=>openMore(secondary));
     nav.appendChild(more);
+    navStates.get(nav).more=more;
   }
 
   function openMore(secondaryButtons){
@@ -82,6 +88,6 @@
   function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
   function cssEsc(v){return window.CSS?.escape?CSS.escape(String(v)):String(v).replace(/[^a-zA-Z0-9_-]/g,'\\$&');}
 
-  new MutationObserver(schedule).observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});
+  new MutationObserver(mutations=>{if(mutations.some(m=>m.type!=='attributes'||m.oldValue!==m.target.getAttribute(m.attributeName)))schedule();}).observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeOldValue:true,attributeFilter:['class']});
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
 })();

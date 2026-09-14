@@ -33,6 +33,8 @@
   async function mount(){
     const list=document.querySelector('.jobs-list-clean');
     if(!list||busy)return;
+    const pendingCards=[...list.querySelectorAll('.item')].some(card=>card.dataset.jobDetailMounted!=='1');
+    if(!pendingCards)return;
     busy=true;
     try{
       const ctx=await getContext();
@@ -46,7 +48,7 @@
       const cards=[...list.querySelectorAll('.item')];
       cards.forEach(card=>enhanceCard(card));
       const p=list.querySelector(':scope > .section-head p');
-      if(p)p.textContent='Tap a job to open its people, time, updates and details.';
+      if(p&&p.textContent!=='Tap a job to open its people, time, updates and details.')p.textContent='Tap a job to open its people, time, updates and details.';
     }finally{busy=false;}
   }
 

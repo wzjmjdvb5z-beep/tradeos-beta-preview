@@ -49,8 +49,8 @@
     if(!copy)return;
     const title=hero.querySelector('h2');
     const sub=hero.querySelector('.sub,p:not(.eyebrow)');
-    if(title)title.textContent=copy[0];
-    if(sub)sub.textContent=copy[1];
+    if(title&&title.textContent!==copy[0])title.textContent=copy[0];
+    if(sub&&sub.textContent!==copy[1])sub.textContent=copy[1];
   }
 
   function cleanJobs(wrap){
@@ -72,7 +72,7 @@
       .find(s=>/saved quotes/i.test(s.querySelector('.section-head h3')?.textContent||''));
 
     const heading=listSection?.querySelector('.section-head h3');
-    if(heading)heading.textContent='Your quotes';
+    if(heading&&heading.textContent!=='Your quotes')heading.textContent='Your quotes';
 
     if(!layout || layout.dataset.cleanPrepared==='1')return;
     layout.dataset.cleanPrepared='1';
@@ -172,7 +172,7 @@
     sections.forEach(section=>{
       const h=section.querySelector('.section-head h3');
       if(/profit by job/i.test(h?.textContent||''))h.textContent='Job profit';
-      if(/invoices/i.test(h?.textContent||''))h.textContent='Invoices';
+      if(/invoices/i.test(h?.textContent||'')&&h.textContent!=='Invoices')h.textContent='Invoices';
     });
 
     wrap.querySelectorAll('.finance-card').forEach(card=>{
@@ -267,6 +267,6 @@
     if(e.target.closest?.('.bottom-nav [data-nav], .modern-more-item'))closeCleanSheet();
   },true);
 
-  new MutationObserver(schedule).observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});
+  new MutationObserver(mutations=>{if(mutations.some(m=>m.type!=='attributes'||m.oldValue!==m.target.getAttribute(m.attributeName)))schedule();}).observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeOldValue:true,attributeFilter:['class']});
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
 })();

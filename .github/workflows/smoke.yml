@@ -2,7 +2,7 @@ name: TradeOS smoke checks
 
 on:
   push:
-    branches: [main]
+    branches: [main, performance-check]
   pull_request:
   workflow_dispatch:
 
@@ -15,6 +15,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -36,6 +38,17 @@ jobs:
           node scripts/test-schedule-visibility.cjs
           node scripts/test-job-actions.cjs
           node scripts/test-commercial-readiness.cjs
+
+      - name: Verify idle UI and live updates in browser
+        run: |
+          npm install --prefix /tmp/tradeos-perf --no-audit --no-fund playwright@1.58.2
+          node /tmp/tradeos-perf/node_modules/playwright/cli.js install --with-deps chromium
+          mkdir -p /tmp/tradeos-baseline
+          for file in modern-ui.js product-v2.js home-simple.js product-clean-v1.js; do
+            git show "HEAD^:app/$file" > "/tmp/tradeos-baseline/$file"
+          done
+          PLAYWRIGHT_MODULE=/tmp/tradeos-perf/node_modules/playwright PERF_BASELINE=1 PERF_SOURCE=/tmp/tradeos-baseline node scripts/test-ui-idle.cjs
+          PLAYWRIGHT_MODULE=/tmp/tradeos-perf/node_modules/playwright node scripts/test-ui-idle.cjs
 
       - name: Verify local HTML assets exist
         shell: bash
