@@ -25,7 +25,7 @@
     wrap.classList.add('tos-commercial-wrap');
     wrap.innerHTML=loadingMarkup(view);
     try{
-      const ctx=await loadContext();
+      const ctx=await loadContext(view);
       if(id!==renderId||currentView()!==view)return;
       currentCtx=ctx;
       if(view==='quotes')drawQuotes(wrap,ctx);else drawFinance(wrap,ctx);
@@ -40,7 +40,7 @@
     return active?.dataset?.nav||'';
   }
 
-  async function loadContext(){
+  async function loadContext(view=currentView()){
     const {data:{user},error:userError}=await client.auth.getUser();
     if(userError||!user)throw userError||new Error('Please sign in again.');
     let companyId=document.querySelector('#company')?.value||null;
@@ -58,24 +58,23 @@
     }
     if(!membership||!companyId)throw new Error('No active TradeOS workspace found.');
 
-    const [quotesR,customersR,jobsR,invoicesR,itemsR,paymentsR]=await Promise.all([
-      client.from('quotes').select('id,company_id,customer_id,quote_number,status,title,description,labour_hours,hourly_rate,materials_cost,callout_fee,vat_rate,subtotal,vat,total,created_at').eq('company_id',companyId).order('created_at',{ascending:false}).limit(300),
+    const isManager=managerRoles.has(membership.role);
+    if(!isManager)return {user,companyId,membership,isManager:false,quotes:[],customers:[],jobs:[],invoices:[],items:[],payments:[],profitability:[],companyProfile:null};
+    const finance=view==='finance',empty={data:[],error:null};
+    const [quotesR,customersR,jobsR,invoicesR,itemsR,paymentsR,profileR,profitR]=await Promise.all([
+      !finance?client.from('quotes').select('id,company_id,customer_id,quote_number,status,title,description,labour_hours,hourly_rate,materials_cost,callout_fee,vat_rate,subtotal,vat,total,created_at').eq('company_id',companyId).order('created_at',{ascending:false}).limit(300):empty,
       client.from('customers').select('id,company_id,name,email,phone,address').eq('company_id',companyId).order('created_at',{ascending:false}).limit(500),
       client.from('jobs').select('id,company_id,customer_id,quote_id,title,status,address,notes,agreed_value,created_at').eq('company_id',companyId).order('created_at',{ascending:false}).limit(500),
-      client.from('invoices').select('id,company_id,customer_id,job_id,invoice_number,status,subtotal,vat,total,due_date,notes,created_at').eq('company_id',companyId).order('created_at',{ascending:false}).limit(300),
-      client.from('invoice_items').select('id,company_id,invoice_id,description,quantity,unit_price,vat_rate,line_subtotal,line_vat,line_total,created_at').eq('company_id',companyId).order('created_at',{ascending:true}).limit(1000),
-      client.from('payments').select('id,company_id,invoice_id,amount,paid_at,method,reference,created_at').eq('company_id',companyId).order('paid_at',{ascending:false}).limit(1000)
+      finance?client.from('invoices').select('id,company_id,customer_id,job_id,invoice_number,status,subtotal,vat,total,due_date,notes,created_at').eq('company_id',companyId).order('created_at',{ascending:false}).limit(300):empty,
+      finance?client.from('invoice_items').select('id,company_id,invoice_id,description,quantity,unit_price,vat_rate,line_subtotal,line_vat,line_total,created_at').eq('company_id',companyId).order('created_at',{ascending:true}).limit(1000):empty,
+      finance?client.from('payments').select('id,company_id,invoice_id,amount,paid_at,method,reference,created_at').eq('company_id',companyId).order('paid_at',{ascending:false}).limit(1000):empty,
+      finance?client.rpc('get_company_document_profile',{target_company:companyId}):{data:null,error:null},
+      finance?client.rpc('get_job_profitability',{target_company:companyId}):empty
     ]);
     for(const r of [quotesR,customersR,jobsR,invoicesR,itemsR,paymentsR])if(r.error)throw r.error;
 
-    let profitability=[],companyProfile=null;
-    const isManager=managerRoles.has(membership.role);
-    if(isManager){
-      const profile=await client.rpc('get_company_document_profile',{target_company:companyId});
-      if(profile.error)throw profile.error;companyProfile=profile.data;
-      const p=await client.rpc('get_job_profitability',{target_company:companyId});
-      if(!p.error)profitability=p.data||[];
-    }
+    if(profileR.error)throw profileR.error;
+    const companyProfile=profileR.data,profitability=profitR.error?[]:(profitR.data||[]);
     return {user,companyId,membership,isManager,companyProfile,quotes:quotesR.data||[],customers:customersR.data||[],jobs:jobsR.data||[],invoices:invoicesR.data||[],items:itemsR.data||[],payments:paymentsR.data||[],profitability};
   }
 
@@ -281,7 +280,7 @@
   async function reload(view){
     const wrap=document.querySelector('main.wrap');if(!wrap||currentView()!==view)return;
     const id=++renderId;
-    try{const ctx=await loadContext();if(id!==renderId||currentView()!==view||!wrap.isConnected)return;currentCtx=ctx;if(view==='quotes')drawQuotes(wrap,ctx);else drawFinance(wrap,ctx);}catch(err){if(id===renderId&&currentView()===view)toast(err?.message||'Could not refresh',true);}
+    try{const ctx=await loadContext(view);if(id!==renderId||currentView()!==view||!wrap.isConnected)return;currentCtx=ctx;if(view==='quotes')drawQuotes(wrap,ctx);else drawFinance(wrap,ctx);}catch(err){if(id===renderId&&currentView()===view)toast(err?.message||'Could not refresh',true);}
   }
 
   window.addEventListener('tradeos:refresh-workflow',()=>{
