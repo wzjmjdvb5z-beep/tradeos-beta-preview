@@ -1,7 +1,7 @@
 (()=>{
   const SUPABASE_URL='https://nynssdxfmjfqgodgynnu.supabase.co';
   const SUPABASE_KEY='sb_publishable_ose18MeKd0ZPfTM1tbq2fg_hzfVcTxf';
-  const client=window.supabase?.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:false,detectSessionInUrl:false}});
+  const client=window.supabase?.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
   let busy=false;
 
   function start(){
@@ -58,7 +58,7 @@
   function memberRow(member){
     const value=member.hourly_cost==null?'':Number(member.hourly_cost).toFixed(2).replace(/\.00$/,'');
     const inputId=`tos-rate-${member.id}`;
-    return `<div class="tos-rate-row"><div class="tos-rate-person"><strong>${esc(member.full_name||'Unnamed member')}</strong><small>${esc(member.role)}${member.role==='owner'?' · working owner':''}</small><div class="tos-rate-saved" data-rate-status="${esc(member.id)}"></div></div><div class="tos-rate-field"><label for="${esc(inputId)}">Hourly rate (£/hr)</label><small>Used to calculate labour cost from approved timesheets.</small><div class="tos-rate-editor"><div class="tos-rate-input-wrap"><input id="${esc(inputId)}" class="tos-rate-input" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00" value="${esc(value)}" data-rate-input="${esc(member.id)}" aria-label="Hourly rate for ${esc(member.full_name||'member')}"></div><button class="tos-rate-save" data-rate-save="${esc(member.id)}">Save</button></div></div></div>`;
+    return `<div class="tos-rate-row"><div class="tos-rate-person"><strong>${esc(member.full_name||'Unnamed member')}</strong><small>${esc(member.role)}${member.role==='owner'?' · working owner':''}</small><div class="tos-rate-saved" data-rate-status="${esc(member.id)}"></div></div><div class="tos-rate-field"><label for="${esc(inputId)}">Hourly rate (£/hr)</label><small>Used to calculate labour cost from approved timesheets.</small><div class="tos-rate-editor"><div class="tos-rate-input-wrap"><input id="${esc(inputId)}" class="tos-rate-input" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00" value="${esc(value)}" data-rate-input="${esc(member.id)}" aria-label="Hourly rate for ${esc(member.full_name||'member')}"></div><button class="tos-rate-save" type="button" data-rate-save="${esc(member.id)}">Save</button></div></div></div>`;
   }
 
   async function saveRate(btn,companyId){
@@ -76,6 +76,10 @@
       btn.disabled=true;btn.textContent='Saving…';
       const {error}=await client.rpc('set_member_cost_rate',{target_company:companyId,target_member:memberId,target_rate:value});
       if(error)throw error;
+      const check=await client.rpc('get_member_cost_rates',{target_company:companyId});
+      if(check.error)throw check.error;
+      const saved=(check.data||[]).find(r=>r.member_id===memberId)?.hourly_cost??null;
+      if((value==null)!=(saved==null)||(value!=null&&Number(saved)!==value))throw new Error('The saved rate could not be verified. Please try again.');
       if(status)status.textContent=value==null?'Rate cleared':`Saved at £${value.toFixed(2)}/hr`;
       enhanceReviewCards();
       setTimeout(()=>{if(status)status.textContent=''},2200);

@@ -30,7 +30,7 @@ async function req(api,body){
     if(r.error)throw r.error;return{jobId:r.data.id};
   }
   if(api==='assign_job'){const r=await sb.from('job_assignments').upsert({company_id:body.companyId,job_id:body.jobId,member_id:body.memberId},{onConflict:'job_id,member_id',ignoreDuplicates:true});if(r.error)throw r.error;return{ok:true};}
-  if(api==='update_member_cost'){const v=body.hourlyCost===''||body.hourlyCost==null?null:num(body.hourlyCost);const r=await sb.from('company_members').update({hourly_cost:v}).eq('company_id',body.companyId).eq('id',body.memberId);if(r.error)throw r.error;return{ok:true};}
+  if(api==='update_member_cost'){const v=body.hourlyCost===''||body.hourlyCost==null?null:num(body.hourlyCost);const r=await sb.rpc('set_member_cost_rate',{target_company:body.companyId,target_member:body.memberId,target_rate:v});rpcData(r,'Hourly cost save failed');return{ok:true};}
   if(api==='create_quote'){const r=await sb.rpc('create_trade_quote',{target_company:body.companyId,customer_name:String(body.customerName||'').trim(),customer_email:nullable(body.customerEmail),customer_phone:nullable(body.customerPhone),customer_address:nullable(body.customerAddress),quote_title:String(body.quoteTitle||'').trim(),quote_description:nullable(body.quoteDescription),labour_hours:num(body.labourHours),hourly_rate:num(body.hourlyRate),materials_cost:num(body.materialsCost),callout_fee:num(body.calloutFee),vat_rate:num(body.vatRate)});return {quoteId:rpcData(r,'Quote creation failed')};}
   if(api==='convert_quote'){const r=await sb.rpc('convert_trade_quote_to_job',{target_quote:body.quoteId});return {jobId:rpcData(r,'Quote conversion failed')};}
   if(api==='upsert_time'){const r=await sb.rpc('upsert_weekly_time_entry',{target_company:body.companyId,target_week_start:body.weekStart,target_job:body.jobId,work_day:body.workDate,worked_hours:num(body.hours),entry_notes:nullable(body.notes)});return {weeklyTimesheetId:rpcData(r,'Hours save failed')};}
@@ -49,7 +49,7 @@ async function bootstrap(){
   if(userError||!user)throw new Error('AUTH');
   const invitationResult=await sb.rpc('accept_my_company_invitations');
   if(invitationResult.error)throw new Error('Could not join your invited workspace: '+invitationResult.error.message);
-  const membershipsResult=await sb.from('company_members').select('id,company_id,user_id,full_name,role,active,hourly_cost,companies(name,trade_type)').eq('user_id',user.id).eq('active',true).order('created_at',{ascending:true});
+  const membershipsResult=await sb.from('company_members').select('id,company_id,user_id,full_name,role,active,companies(name,trade_type)').eq('user_id',user.id).eq('active',true).order('created_at',{ascending:true});
   if(membershipsResult.error)throw membershipsResult.error;
   const memberships=membershipsResult.data||[];
   const activeMembership=memberships.find(m=>m.company_id===companyId)||memberships[0]||null;
@@ -58,21 +58,24 @@ async function bootstrap(){
   const cid=companyId;
   const isManager=['owner','admin','manager'].includes(activeMembership.role);
   const emptyResult=Promise.resolve({data:[],error:null});
-  const [jobsResult,membersResult,quotesResult,assignmentsResult,invoicesResult,materialsResult]=await Promise.all([
+  const [jobsResult,membersResult,quotesResult,assignmentsResult,invoicesResult,materialsResult,ratesResult]=await Promise.all([
     sb.from('jobs').select('id,company_id,customer_id,quote_id,title,status,address,scheduled_start,scheduled_end,notes,agreed_value,created_at,customers(name,email,phone,address)').eq('company_id',cid).order('created_at',{ascending:false}).limit(200),
-    sb.from('company_members').select('id,company_id,user_id,full_name,role,active,hourly_cost,created_at').eq('company_id',cid).eq('active',true).order('created_at',{ascending:true}),
+    sb.from('company_members').select('id,company_id,user_id,full_name,role,active,created_at').eq('company_id',cid).eq('active',true).order('created_at',{ascending:true}),
     isManager?sb.from('quotes').select('id,company_id,customer_id,quote_number,status,title,description,labour_hours,hourly_rate,materials_cost,callout_fee,vat_rate,subtotal,vat,total,created_at,customers(name,email,phone,address)').eq('company_id',cid).order('created_at',{ascending:false}).limit(200):emptyResult,
     sb.from('job_assignments').select('id,company_id,job_id,member_id,created_at').eq('company_id',cid).limit(500),
     isManager?sb.from('invoices').select('id,company_id,customer_id,job_id,invoice_number,status,subtotal,vat,total,due_date,notes,created_at,payments(id,amount,paid_at,method,reference),invoice_items(id,description,quantity,unit_price,vat_rate,line_subtotal,line_vat,line_total)').eq('company_id',cid).order('created_at',{ascending:false}).limit(200):emptyResult,
-    isManager?sb.from('job_materials').select('id,company_id,job_id,description,quantity,unit_cost,created_by,created_at').eq('company_id',cid).order('created_at',{ascending:false}).limit(500):emptyResult
+    isManager?sb.from('job_materials').select('id,company_id,job_id,description,quantity,unit_cost,created_by,created_at').eq('company_id',cid).order('created_at',{ascending:false}).limit(500):emptyResult,
+    isManager?sb.rpc('get_member_cost_rates',{target_company:cid}):emptyResult
   ]);
-  for(const r of [jobsResult,membersResult,quotesResult,assignmentsResult,invoicesResult,materialsResult])if(r.error)throw r.error;
+  for(const r of [jobsResult,membersResult,quotesResult,assignmentsResult,invoicesResult,materialsResult,ratesResult])if(r.error)throw r.error;
+  const ratesByMember=new Map((ratesResult.data||[]).map(r=>[r.member_id,r.hourly_cost]));
+  const members=(membersResult.data||[]).map(member=>({...member,hourly_cost:ratesByMember.get(member.id)??null}));
   if(isManager){const r=await sb.from('job_financials').select('job_id,billing_stage').eq('company_id',cid);if(r.error)throw r.error;for(const j of jobsResult.data||[])j.billing_stage=(r.data||[]).find(f=>f.job_id===j.id)?.billing_stage||null;}
   let wq=sb.from('weekly_timesheets').select('id,company_id,user_id,week_start,status,submitted_at,reviewed_by,reviewed_at,rejection_reason,created_at,updated_at,weekly_time_entries(id,job_id,work_date,hours,notes)').eq('company_id',cid).eq('week_start',week).order('week_start',{ascending:false});
   const weeklyResult=await wq.limit(300);if(weeklyResult.error)throw weeklyResult.error;
   let invitations=[];if(['owner','admin','manager'].includes(activeMembership.role)){const r=await sb.from('company_invitations').select('id,company_id,email,role,status,expires_at,created_at,accepted_at').eq('company_id',cid).order('created_at',{ascending:false}).limit(100);if(!r.error)invitations=r.data||[];}
   let profitability=[];if(['owner','admin','manager'].includes(activeMembership.role)){const r=await sb.rpc('get_job_profitability',{target_company:cid});if(r.error)throw r.error;profitability=r.data||[];}
-  return{user:{id:user.id,email:user.email},memberships,activeMembership,activeCompany:{id:cid,name:activeMembership.companies?.name||'Workspace',tradeType:activeMembership.companies?.trade_type||null},jobs:jobsResult.data||[],members:membersResult.data||[],quotes:quotesResult.data||[],assignments:assignmentsResult.data||[],weeklyTimesheets:weeklyResult.data||[],invitations,profitability,invoices:invoicesResult.data||[],jobMaterials:materialsResult.data||[]};
+  return{user:{id:user.id,email:user.email},memberships,activeMembership,activeCompany:{id:cid,name:activeMembership.companies?.name||'Workspace',tradeType:activeMembership.companies?.trade_type||null},jobs:jobsResult.data||[],members,quotes:quotesResult.data||[],assignments:assignmentsResult.data||[],weeklyTimesheets:weeklyResult.data||[],invitations,profitability,invoices:invoicesResult.data||[],jobMaterials:materialsResult.data||[]};
 }
 
 async function start(){const {data:{session}}=await sb.auth.getSession();if(!session)return auth();try{await refresh()}catch(e){auth(e.message==='AUTH'?'':e.message)}}

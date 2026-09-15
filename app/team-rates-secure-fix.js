@@ -1,7 +1,7 @@
 (()=>{
   const SUPABASE_URL='https://nynssdxfmjfqgodgynnu.supabase.co';
   const KEY='sb_publishable_ose18MeKd0ZPfTM1tbq2fg_hzfVcTxf';
-  const client=window.supabase?.createClient(SUPABASE_URL,KEY,{auth:{persistSession:true,autoRefreshToken:false,detectSessionInUrl:false}});
+  const client=window.supabase?.createClient(SUPABASE_URL,KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
   if(!client)return;
 
   let queued=false,busy=false,lastCompany=null;
