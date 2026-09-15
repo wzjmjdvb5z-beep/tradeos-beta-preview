@@ -1,5 +1,9 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 const source=fs.readFileSync('app/job-detail-v1.js','utf8').replace("  new MutationObserver(schedule)","  globalThis.api={set(v){current=v;},performJobAction,jobStage,renderJob};\n  new MutationObserver(schedule)");
+assert.match(source,/\.limit\(1\)\.maybeSingle\(\)/);
+assert.match(source,/e\?\.code==='JOB_NOT_FOUND'/);
+assert.match(source,/jobsCache=\[\];contextCache=null;closeJob\(\)/);
+assert.doesNotMatch(source,/eq\('company_id',ctx\.companyId\)\.single\(\)/);
 let calls=[],events=[],next={data:'job'},removed=0;
 const error={hidden:true},buttons=[{},{}];
 const overlay={querySelectorAll:()=>buttons,querySelector:()=>error,remove(){removed++;}};

@@ -87,6 +87,12 @@
     try{
       await loadJob(jobId,o);
     }catch(e){
+      if(e?.code==='JOB_NOT_FOUND'){
+        jobsCache=[];contextCache=null;closeJob();
+        document.dispatchEvent(new CustomEvent('tradeos:jobs-changed'));
+        toast('That job was already removed. Your jobs have been refreshed.');
+        return;
+      }
       o.querySelector('.tos-job-detail-page').innerHTML=`<div class="tos-job-error"><button type="button" class="tos-job-back">‹ Back</button><h2>Couldn’t open this job</h2><p>${esc(e?.message||'Please try again.')}</p></div>`;
       o.querySelector('.tos-job-back')?.addEventListener('click',closeJob);
     }
@@ -95,7 +101,7 @@
   async function loadJob(jobId,o){
     const ctx=await getContext(); if(!ctx)throw new Error('Your session has expired.');
     const [jr,mr,ar,tr,nr,fr]=await Promise.all([
-      client.from('jobs').select('id,company_id,customer_id,title,status,address,scheduled_start,scheduled_end,notes,agreed_value,customers(name,email,phone,address)').eq('id',jobId).eq('company_id',ctx.companyId).single(),
+      client.from('jobs').select('id,company_id,customer_id,title,status,address,scheduled_start,scheduled_end,notes,agreed_value,customers(name,email,phone,address)').eq('id',jobId).eq('company_id',ctx.companyId).limit(1).maybeSingle(),
       client.from('company_members').select('id,user_id,full_name,role,active').eq('company_id',ctx.companyId).eq('active',true).order('created_at',{ascending:true}),
       client.from('job_assignments').select('id,job_id,member_id').eq('company_id',ctx.companyId).eq('job_id',jobId),
       client.from('weekly_time_entries').select('id,user_id,weekly_timesheet_id,work_date,start_time,end_time,break_minutes,hours,notes,created_at').eq('company_id',ctx.companyId).eq('job_id',jobId).order('work_date',{ascending:false}).order('start_time',{ascending:false}).limit(300),
@@ -103,6 +109,7 @@
       client.from('job_note_files').select('id,company_id,job_id,note_id,created_by,storage_path,file_name,mime_type,size_bytes,created_at').eq('company_id',ctx.companyId).eq('job_id',jobId).order('created_at',{ascending:true}).limit(600)
     ]);
     if(jr.error)throw jr.error;if(mr.error)throw mr.error;if(ar.error)throw ar.error;if(tr.error)throw tr.error;if(nr.error)throw nr.error;if(fr.error)throw fr.error;
+    if(!jr.data){const error=new Error('This job is no longer available.');error.code='JOB_NOT_FOUND';throw error;}
     const state={ctx,job:jr.data,members:mr.data||[],assignments:ar.data||[],entries:tr.data||[],notes:nr.data||[],noteFiles:fr.data||[],photoUrls:{},overlay:o};
     if(['owner','admin','manager'].includes(ctx.membership.role)){
       const billing=await client.from('job_financials').select('billing_stage').eq('company_id',ctx.companyId).eq('job_id',jobId).maybeSingle();
@@ -401,5 +408,6 @@
 
   document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(document.querySelector('.tos-job-team-sheet'))document.querySelector('.tos-job-team-sheet .tos-job-team-close')?.click();else if(document.querySelector('.tos-job-detail'))closeJob();}});
   new MutationObserver(schedule).observe(document.documentElement,{childList:true,subtree:true});
+  document.addEventListener('tradeos:jobs-changed',()=>{jobsCache=[];contextCache=null;schedule();});
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
 })();
