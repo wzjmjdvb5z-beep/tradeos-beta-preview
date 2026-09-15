@@ -75,6 +75,30 @@
     return !error&&data?.ready===true;
   }
 
+  function billingError(code){
+    if(code==='subscription_not_found')return 'No Stripe subscription was found for this business.';
+    if(code==='sandbox_billing_not_configured')return 'The old test subscription cannot be changed from the live billing connection.';
+    if(code==='billing_not_configured')return 'Secure billing is not connected yet.';
+    return 'We couldn’t update the subscription. Please try again.';
+  }
+
+  async function updateSubscription(companyId,action){
+    const {data,error}=await client.functions.invoke(CHECKOUT_FUNCTION,{body:{company_id:companyId,action}});
+    if(error){
+      let detail=null;
+      try{detail=await error.context?.json?.();}catch(_){ }
+      throw new Error(billingError(detail?.error));
+    }
+    if(!data?.ok)throw new Error(billingError(data?.error));
+    return data;
+  }
+
+  function dateLabel(value){
+    if(!value)return '';
+    const d=new Date(value);
+    return Number.isNaN(d.getTime())?'':d.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+  }
+
   async function openBilling(){
     document.querySelector('.tos-billing-sheet')?.remove();
     const ctx=await context();
@@ -94,6 +118,7 @@
     const active=status==='active';
     const trial=status==='trialing';
     const subscribed=Boolean(b.has_subscription);
+    const cancellationPending=subscribed&&Boolean(b.cancel_at_period_end);
     const basePence=Number(b.price_pence||1900);
     const seatPence=Number(b.seat_price_pence||799);
     const activeUsers=Math.max(1,Number(b.active_user_count||1));
@@ -103,17 +128,19 @@
     const seatPrice=(seatPence/100).toFixed(2);
     const monthly=(monthlyPence/100).toFixed(2);
     const trialCopy=trial?`${days} day${days===1?'':'s'} remaining`:(active?'Subscription active':pretty(status));
+    const accessEnd=dateLabel(b.current_period_end||b.trial_ends_at);
 
     const o=document.createElement('div');
     o.className='tos-billing-sheet';
     o.innerHTML=`<div class="tos-billing-panel" role="dialog" aria-modal="true" aria-label="Plan and billing">
       <div class="tos-billing-handle"></div>
       <div class="tos-billing-head"><div><span>VEYSTEAD PLAN</span><h3>Veystead</h3><p>${esc(companyName)}</p></div><button type="button" class="tos-billing-close" aria-label="Close">×</button></div>
-      <div class="tos-billing-status ${esc(status)}"><span>${esc(trialCopy)}</span><strong>£${monthly}<small>/month</small></strong></div>
+      <div class="tos-billing-status ${cancellationPending?'scheduled':esc(status)}"><span>${esc(cancellationPending?'Cancellation scheduled':trialCopy)}</span><strong>£${monthly}<small>/month</small></strong></div>
       <div class="tos-billing-founder"><strong>Simple pricing that grows with your team</strong><p>£${price}/month includes the owner, then £${seatPrice} for each additional active user. Your current total is based on ${activeUsers} active user${activeUsers===1?'':'s'}.</p></div>
       <div class="tos-billing-card"><h4>Everything you need to run the job</h4><div class="tos-billing-features"><span>✓ Jobs, team & scheduling</span><span>✓ Timesheets & job time</span><span>✓ Quotes & invoices</span><span>✓ Job profitability</span><span>✓ Customer quote/invoice links</span><span>✓ Job notes & photos</span></div></div>
       <div class="tos-billing-founder"><strong>Cancel anytime</strong><p>There are no staff bands or long contract. Inactive users are not included in the next calculated seat total.</p></div>
-      ${active||subscribed?`<button type="button" class="tos-billing-cta" disabled>${active?'Plan active':'Trial active'}</button>`:ready?'<button type="button" class="tos-billing-cta">Start 14-day trial</button>':'<button type="button" class="tos-billing-cta" disabled>Secure checkout being connected</button>'}
+      ${active||subscribed?`<button type="button" class="tos-billing-cta" disabled>${cancellationPending?'Cancellation scheduled':active?'Plan active':'Trial active'}</button>`:ready?'<button type="button" class="tos-billing-cta">Start 14-day trial</button>':'<button type="button" class="tos-billing-cta" disabled>Secure checkout being connected</button>'}
+      ${subscribed?(cancellationPending?`<p class="tos-billing-cancel-copy">You keep access${accessEnd?` until ${esc(accessEnd)}`:''}. No further renewal will be taken.</p><button type="button" class="tos-billing-manage" data-billing-resume>Keep subscription</button>`:`<button type="button" class="tos-billing-manage danger" data-billing-cancel>Cancel subscription</button>`):''}
       ${!active&&!subscribed?(ready?'<p class="tos-billing-pending">Stripe will collect payment details now. Your first charge is after the remaining trial period.</p>':'<p class="tos-billing-pending">Your Veystead trial remains available. Payment details cannot be collected until the secure Stripe connection is finished.</p>'):''}
     </div>`;
 
@@ -127,6 +154,18 @@
       const button=e.currentTarget;button.disabled=true;button.textContent='Opening secure checkout…';
       try{window.location.assign(await createCheckout(ctx.companyId));}
       catch(err){button.disabled=false;button.textContent='Start 14-day trial';toast(err?.message||'Checkout is temporarily unavailable.');}
+    });
+    o.querySelector('[data-billing-cancel]')?.addEventListener('click',async e=>{
+      const message=trial?'Cancel your trial subscription? You will keep access until the trial ends and you will not be charged.':'Cancel your subscription? You will keep access until the end of the current billing period.';
+      if(!window.confirm(message))return;
+      const button=e.currentTarget;button.disabled=true;button.textContent='Scheduling cancellation…';
+      try{await updateSubscription(ctx.companyId,'cancel');close();await openBilling();toast('Subscription cancellation scheduled.');}
+      catch(err){button.disabled=false;button.textContent='Cancel subscription';toast(err?.message||'We couldn’t update the subscription.');}
+    });
+    o.querySelector('[data-billing-resume]')?.addEventListener('click',async e=>{
+      const button=e.currentTarget;button.disabled=true;button.textContent='Restoring subscription…';
+      try{await updateSubscription(ctx.companyId,'resume');close();await openBilling();toast('Your subscription will continue.');}
+      catch(err){button.disabled=false;button.textContent='Keep subscription';toast(err?.message||'We couldn’t update the subscription.');}
     });
   }
 
