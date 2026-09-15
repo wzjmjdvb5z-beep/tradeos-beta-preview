@@ -7,7 +7,7 @@
   let queued=false,busy=false,ctx=null;
 
   const privilegedRole=role=>['owner','admin','manager'].includes(String(role||'').toLowerCase());
-  const canSeePricing=membership=>privilegedRole(membership?.role);
+  const canSeePricing=membership=>privilegedRole(membership?.role)||membership?.can_view_pricing===true;
 
   function schedule(){
     if(queued)return;
@@ -97,7 +97,7 @@
     card.className='card section tos-pricing-access-card';
     card.innerHTML=`
       <div class="tos-pricing-head">
-        <div><span>PERMISSIONS</span><h3>Pricing access</h3><p>Employees cannot see pricing or financial information. Owners, admins and managers have access.</p></div>
+        <div><span>PERMISSIONS</span><h3>Pricing access</h3><p>Choose which employees can see job prices and financial information. Owners, admins and managers always have access.</p></div>
       </div>
       <div class="tos-pricing-list">${members.map(memberRow).join('')}</div>`;
 
@@ -114,13 +114,13 @@
 
   function memberRow(m){
     const automatic=privilegedRole(m.role);
-    const checked=automatic;
+    const checked=automatic||m.can_view_pricing===true;
     const label=automatic?'Always allowed':checked?'Pricing visible':'Pricing hidden';
     return `<div class="tos-pricing-row">
       <div class="tos-pricing-person"><strong>${esc(m.full_name||'Name not set')}</strong><small>${esc(pretty(m.role))}</small></div>
       <label class="tos-pricing-switch ${automatic?'is-locked':''}">
         <span data-pricing-label="${esc(m.id)}">${esc(label)}</span>
-        <input type="checkbox" data-pricing-toggle="${esc(m.id)}" ${checked?'checked':''} disabled aria-label="Pricing access for ${esc(m.full_name||'team member')}">
+        <input type="checkbox" data-pricing-toggle="${esc(m.id)}" ${checked?'checked':''} ${automatic?'disabled':''} aria-label="Pricing access for ${esc(m.full_name||'team member')}">
         <i aria-hidden="true"></i>
       </label>
     </div>`;
@@ -134,9 +134,7 @@
     input.disabled=true;
     if(label)label.textContent='Saving…';
     try{
-      const r=await client.from('company_members')
-        .update({can_view_pricing:checked})
-        .eq('company_id',ctx.companyId).eq('id',memberId);
+      const r=await client.rpc('set_member_pricing_access',{target_company:ctx.companyId,target_member:memberId,allowed:checked});
       if(r.error)throw r.error;
       if(label)label.textContent=checked?'Pricing visible':'Pricing hidden';
       toast(checked?'Pricing access enabled':'Pricing access removed');
@@ -155,7 +153,7 @@
     document.body.appendChild(t);setTimeout(()=>t.remove(),2300);
   }
   function pretty(v){return String(v||'').replace(/(^|[_-])(\w)/g,(_,a,b)=>(a?' ':'')+b.toUpperCase());}
-  function css(v){return window.CSS?.escape?CSS.escape(String(v)):String(v).replace(/[^a-zA-Z0-9_-]/g,'\\$&');}
+  function css(v){return window.CSS?.escape?window.CSS.escape(String(v)):String(v).replace(/[^a-zA-Z0-9_-]/g,'\\$&');}
   function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
   new MutationObserver(()=>{

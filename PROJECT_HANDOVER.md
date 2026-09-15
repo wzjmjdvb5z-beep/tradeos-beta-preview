@@ -154,3 +154,8 @@ Subscription: see SUBSCRIPTION_PROPOSAL.md. No live plan or charges changed. Con
 Trademark: submitted application UK00004444915 on 14 September 2026, reference VEYSTEAD-001, Classes 9 and 42. Not registered/cleared; examination payment route unverified.
 Domains: user confirmed veystead.com/app works, GitHub DNS successful and HTTPS enforced. UK domain redirects saved at Porkbun but Safari TLS failed; not verified resolved. Preserve MX/TXT email records.
 Latest previously inspected TestFlight upload workflow: build 23 succeeded for ac573550; Apple tester availability and App Store approval not confirmed.
+
+## Permanent job deletion and employee financial controls — 15 September 2026
+Ben explicitly requested true removal of duplicate/error jobs even when they have time or invoices. The candidate manage_job action deletes company-scoped payments, invoices/items/share tokens, weekly and legacy time, timer sessions, note/file rows, materials, expenses, assignments and the job in one database transaction. The app warns that all of these records and photos will be erased; stored job-note photos are removed after the database confirms deletion. No existing job is deleted during deployment or testing.
+
+Employee rate saving now uses the existing set_member_cost_rate manager RPC and reads rates through get_member_cost_rates; direct protected-column writes were removed from both rate entry points. Pricing access now honours company_members.can_view_pricing for employees. Owners/admins can toggle an employee through set_member_pricing_access; privileged roles remain always enabled. private.can_view_pricing enforces this permission for protected backend results.

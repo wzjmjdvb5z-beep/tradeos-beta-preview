@@ -148,7 +148,7 @@
         <span class="tos-job-status">${esc(jobStage(job))}</span>
       </header>
       <main class="tos-job-body">
-        ${manager?`<section class="tos-job-section"><div class="tos-job-section-head"><div><span>PROGRESS</span><h3>Job stage</h3></div></div><label for="tos-job-stage">Update stage</label><select id="tos-job-stage" class="btn secondary" style="width:100%;margin-top:8px">${['ready','in progress','complete','bill sent','bill paid'].map(v=>`<option value="${v}" ${jobStage(job).toLowerCase()===v?'selected':''}>${v[0].toUpperCase()+v.slice(1)}</option>`).join('')}</select><p class="sub">Billing stages are private to managers. Changing a stage does not send an invoice or record a payment.</p><button type="button" class="btn" id="tos-save-job-stage">Save stage</button><p id="tos-job-action-error" role="alert" hidden></p><hr><button type="button" class="btn secondary" id="tos-delete-job" style="color:#b42318">Delete job</button><div id="tos-delete-confirm" hidden><p>Delete <strong>${esc(job.title)}</strong>? This permanently removes the job, its schedule and assignments. This cannot be undone. Jobs with recorded time, invoices, costs or updates are protected.</p><button type="button" class="btn secondary" id="tos-cancel-delete">Keep job</button> <button type="button" class="btn" id="tos-confirm-delete" style="background:#b42318">Delete permanently</button></div></section>`:''}
+        ${manager?`<section class="tos-job-section"><div class="tos-job-section-head"><div><span>PROGRESS</span><h3>Job stage</h3></div></div><label for="tos-job-stage">Update stage</label><select id="tos-job-stage" class="btn secondary" style="width:100%;margin-top:8px">${['ready','in progress','complete','bill sent','bill paid'].map(v=>`<option value="${v}" ${jobStage(job).toLowerCase()===v?'selected':''}>${v[0].toUpperCase()+v.slice(1)}</option>`).join('')}</select><p class="sub">Billing stages are private to managers. Changing a stage does not send an invoice or record a payment.</p><button type="button" class="btn" id="tos-save-job-stage">Save stage</button><p id="tos-job-action-error" role="alert" hidden></p><hr><button type="button" class="btn secondary" id="tos-delete-job" style="color:#b42318">Delete job</button><div id="tos-delete-confirm" hidden><p><strong>Permanently delete ${esc(job.title)}?</strong></p><p>This completely removes its schedule, assignments, time entries, invoices, payments, costs, updates and photos. This cannot be undone.</p><button type="button" class="btn secondary" id="tos-cancel-delete">Keep job</button> <button type="button" class="btn" id="tos-confirm-delete" style="background:#b42318">Delete everything</button></div></section>`:''}
         <section class="tos-job-hero-card">
           <div class="tos-job-address">${esc(job.address||customer?.address||'No address added')}</div>
           <div class="tos-job-metrics">
@@ -195,17 +195,23 @@
     if(action==='delete'&&deleteButton?.id==='tos-confirm-delete')deleteButton.textContent='Deleting…';
     const error=state.overlay.querySelector('#tos-job-action-error');error.hidden=true;
     try{
+      const photoPaths=action==='delete'?(state.noteFiles||[]).map(f=>f.storage_path).filter(Boolean):[];
       const r=await client.rpc('manage_job',{target_company:state.ctx.companyId,target_job:state.job.id,job_action:action,next_stage:stage});
       if(r.error)throw r.error;if(r.data!==state.job.id)throw new Error('The job was not changed. Please refresh and try again.');
+      let photoCleanupError=null;
+      if(photoPaths.length){
+        try{const cleanup=await client.storage.from('job-notes').remove(photoPaths);photoCleanupError=cleanup?.error||null;}
+        catch(cleanupError){photoCleanupError=cleanupError;}
+      }
       jobsCache=[];
       if(current===state){
         if(action==='delete')closeJob();
         else{state.job.status=['bill sent','bill paid'].includes(stage)?'complete':stage;state.job.billing_stage=['bill sent','bill paid'].includes(stage)?stage:null;renderJob();}
       }
       document.dispatchEvent(new CustomEvent('tradeos:jobs-changed'));
-      toast(action==='delete'?'Job deleted':'Job stage updated');
+      toast(action==='delete'?(photoCleanupError?'Job deleted; some photo files still need cleanup':'Job deleted'):'Job stage updated');
     }catch(e){if(current===state){error.textContent=e.message||'Could not update the job.';error.hidden=false;error.scrollIntoView?.({block:'center'});}}
-    finally{state.saving=false;buttons.forEach(b=>b.disabled=false);if(deleteButton?.id==='tos-confirm-delete')deleteButton.textContent='Delete permanently';}
+    finally{state.saving=false;buttons.forEach(b=>b.disabled=false);if(deleteButton?.id==='tos-confirm-delete')deleteButton.textContent='Delete everything';}
   }
 
   function notesSectionHtml(){

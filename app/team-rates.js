@@ -32,8 +32,14 @@
       }
       const {data:me,error:meError}=await client.from('company_members').select('role').eq('company_id',companyId).eq('user_id',user.id).eq('active',true).maybeSingle();
       if(meError||!me||!['owner','admin'].includes(me.role))return;
-      const {data:members,error}=await client.from('company_members').select('id,full_name,role,hourly_cost,user_id').eq('company_id',companyId).eq('active',true).order('created_at',{ascending:true});
-      if(error)throw error;
+      const [membersResult,ratesResult]=await Promise.all([
+        client.from('company_members').select('id,full_name,role,user_id').eq('company_id',companyId).eq('active',true).order('created_at',{ascending:true}),
+        client.rpc('get_member_cost_rates',{target_company:companyId})
+      ]);
+      if(membersResult.error)throw membersResult.error;
+      if(ratesResult.error)throw ratesResult.error;
+      const rates=new Map((ratesResult.data||[]).map(r=>[r.member_id,r.hourly_cost]));
+      const members=(membersResult.data||[]).map(m=>({...m,hourly_cost:rates.get(m.id)??null}));
 
       const card=document.createElement('section');
       card.className='card section tos-rates-card';
@@ -68,7 +74,7 @@
     const old=btn.textContent;
     try{
       btn.disabled=true;btn.textContent='Saving…';
-      const {error}=await client.from('company_members').update({hourly_cost:value}).eq('company_id',companyId).eq('id',memberId);
+      const {error}=await client.rpc('set_member_cost_rate',{target_company:companyId,target_member:memberId,target_rate:value});
       if(error)throw error;
       if(status)status.textContent=value==null?'Rate cleared':`Saved at £${value.toFixed(2)}/hr`;
       enhanceReviewCards();
@@ -99,6 +105,6 @@
   }
 
   function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-  function cssEsc(v){return window.CSS?.escape?CSS.escape(String(v)):String(v).replace(/[^a-zA-Z0-9_-]/g,'\\$&');}
+  function cssEsc(v){return window.CSS?.escape?window.CSS.escape(String(v)):String(v).replace(/[^a-zA-Z0-9_-]/g,'\\$&');}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();

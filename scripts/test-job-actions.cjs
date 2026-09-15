@@ -17,6 +17,8 @@ const page={innerHTML:'',querySelector:id=>controls[id]||null};
 const rendered={...state('owner'),members:[],assignments:[],entries:[],notes:[],overlay:{isConnected:true,querySelector:()=>page}};
 api.set(rendered);api.renderJob();
 assert.ok(page.innerHTML.indexOf('tos-delete-job')<page.innerHTML.indexOf('tos-job-hero-card'));
+assert.ok(page.innerHTML.includes('time entries, invoices, payments, costs, updates and photos'));
+assert.ok(page.innerHTML.includes('Delete everything'));
 controls['#tos-delete-job'].click();assert.equal(controls['#tos-delete-confirm'].hidden,false);assert.equal(controls['#tos-delete-confirm'].scrolled,true);
 controls['#tos-cancel-delete'].click();assert.equal(controls['#tos-delete-confirm'].hidden,true);assert.equal(controls['#tos-delete-job'].hidden,false);
 console.log('PASS: employee denied, deletion errors preserved, confirmed delete refreshes, stage labels.');
