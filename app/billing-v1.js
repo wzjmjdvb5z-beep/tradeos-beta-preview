@@ -70,14 +70,20 @@
     return data.url;
   }
 
+  async function checkoutReady(companyId){
+    const {data,error}=await client.functions.invoke(CHECKOUT_FUNCTION,{body:{company_id:companyId,action:'status'}});
+    return !error&&data?.ready===true;
+  }
+
   async function openBilling(){
     document.querySelector('.tos-billing-sheet')?.remove();
     const ctx=await context();
     if(!ctx||!managerRoles.has(ctx.membership.role))return;
 
-    const [billingRes,companyRes]=await Promise.all([
+    const [billingRes,companyRes,ready]=await Promise.all([
       client.rpc('get_company_billing_v2',{target_company:ctx.companyId}),
-      client.from('companies').select('name').eq('id',ctx.companyId).single()
+      client.from('companies').select('name').eq('id',ctx.companyId).single(),
+      checkoutReady(ctx.companyId)
     ]);
     if(billingRes.error){toast(billingRes.error.message);return;}
 
@@ -107,8 +113,8 @@
       <div class="tos-billing-founder"><strong>Simple pricing that grows with your team</strong><p>£${price}/month includes the owner, then £${seatPrice} for each additional active user. Your current total is based on ${activeUsers} active user${activeUsers===1?'':'s'}.</p></div>
       <div class="tos-billing-card"><h4>Everything you need to run the job</h4><div class="tos-billing-features"><span>✓ Jobs, team & scheduling</span><span>✓ Timesheets & job time</span><span>✓ Quotes & invoices</span><span>✓ Job profitability</span><span>✓ Customer quote/invoice links</span><span>✓ Job notes & photos</span></div></div>
       <div class="tos-billing-founder"><strong>Cancel anytime</strong><p>There are no staff bands or long contract. Inactive users are not included in the next calculated seat total.</p></div>
-      ${active||subscribed?`<button type="button" class="tos-billing-cta" disabled>${active?'Plan active':'Trial active'}</button>`:'<button type="button" class="tos-billing-cta">Start 14-day trial</button>'}
-      ${!active&&!subscribed?'<p class="tos-billing-pending">Stripe will collect payment details now. Your first charge is after the 14-day trial.</p>':''}
+      ${active||subscribed?`<button type="button" class="tos-billing-cta" disabled>${active?'Plan active':'Trial active'}</button>`:ready?'<button type="button" class="tos-billing-cta">Start 14-day trial</button>':'<button type="button" class="tos-billing-cta" disabled>Secure checkout being connected</button>'}
+      ${!active&&!subscribed?(ready?'<p class="tos-billing-pending">Stripe will collect payment details now. Your first charge is after the remaining trial period.</p>':'<p class="tos-billing-pending">Your Veystead trial remains available. Payment details cannot be collected until the secure Stripe connection is finished.</p>'):''}
     </div>`;
 
     document.body.appendChild(o);
@@ -117,7 +123,7 @@
     const close=()=>{o.remove();document.body.style.overflow=previousOverflow;};
     o.querySelector('.tos-billing-close')?.addEventListener('click',close);
     o.addEventListener('click',e=>{if(e.target===o)close();});
-    if(!active&&!subscribed)o.querySelector('.tos-billing-cta')?.addEventListener('click',async e=>{
+    if(!active&&!subscribed&&ready)o.querySelector('.tos-billing-cta')?.addEventListener('click',async e=>{
       const button=e.currentTarget;button.disabled=true;button.textContent='Opening secure checkout…';
       try{window.location.assign(await createCheckout(ctx.companyId));}
       catch(err){button.disabled=false;button.textContent='Start 14-day trial';toast(err?.message||'Checkout is temporarily unavailable.');}

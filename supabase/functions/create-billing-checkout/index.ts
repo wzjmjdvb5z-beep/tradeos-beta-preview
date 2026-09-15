@@ -25,7 +25,6 @@ function looksUuid(value: unknown): value is string {
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS_HEADERS });
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
-  if (!STRIPE_SECRET_KEY) return json({ error: "billing_not_configured" }, 503);
 
   const authorization = req.headers.get("Authorization") || "";
   const userClient = createClient(SUPABASE_URL, ANON_KEY, {
@@ -38,6 +37,7 @@ Deno.serve(async (req: Request) => {
   let body: Record<string, unknown>;
   try { body = await req.json(); } catch { return json({ error: "invalid_json" }, 400); }
   const companyId = body.company_id;
+  const action = body.action === "status" ? "status" : "checkout";
   if (!looksUuid(companyId)) return json({ error: "invalid_company" }, 400);
 
   const db = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, { auth: { persistSession: false } });
@@ -49,10 +49,12 @@ Deno.serve(async (req: Request) => {
     .maybeSingle();
   if (memberError) return json({ error: "membership_lookup_failed" }, 500);
   if (!membership || !["owner", "admin", "manager"].includes(membership.role)) return json({ error: "forbidden" }, 403);
+  if (action === "status") return json({ ready: Boolean(STRIPE_SECRET_KEY) });
+  if (!STRIPE_SECRET_KEY) return json({ error: "billing_not_configured" }, 503);
 
   const [{ data: members, error: countError }, { data: billing, error: billingError }] = await Promise.all([
     db.from("company_members").select("user_id").eq("company_id", companyId).eq("active", true),
-    db.from("company_billing").select("status,stripe_customer_id,stripe_subscription_id").eq("company_id", companyId).maybeSingle(),
+    db.from("company_billing").select("status,trial_ends_at,stripe_customer_id,stripe_subscription_id").eq("company_id", companyId).maybeSingle(),
   ]);
   if (countError || billingError) return json({ error: "billing_lookup_failed" }, 500);
   if (billing?.stripe_subscription_id && ["trialing", "active", "past_due"].includes(billing.status)) {
@@ -72,7 +74,10 @@ Deno.serve(async (req: Request) => {
     form.set("line_items[1][price]", SEAT_PRICE);
     form.set("line_items[1][quantity]", String(additionalUsers));
   }
-  form.set("subscription_data[trial_period_days]", "14");
+  const trialEnd = billing?.trial_ends_at ? new Date(billing.trial_ends_at).getTime() : 0;
+  if (trialEnd > Date.now() + 48 * 60 * 60 * 1000) {
+    form.set("subscription_data[trial_end]", String(Math.floor(trialEnd / 1000)));
+  }
   form.set("subscription_data[metadata][company_id]", companyId);
   form.set("subscription_data[metadata][active_users_at_checkout]", String(activeUsers));
   form.set("metadata[company_id]", companyId);
