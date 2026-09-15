@@ -95,6 +95,12 @@ jobs:
           grep -Eq '"appStartPath"[[:space:]]*:[[:space:]]*"app/index.html"' capacitor.config.json
           grep -Eq '"appStartPath"[[:space:]]*:[[:space:]]*"app/index.html"' ios/App/App/capacitor.config.json
           grep -q "PRODUCT_BUNDLE_IDENTIFIER = ${APP_BUNDLE_ID};" ios/App/App.xcodeproj/project.pbxproj
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleDisplayName' ios/App/App/Info.plist 2>/dev/null || true)" = 'Veystead' || \
+            grep -q 'Veystead' ios/App/App/Info.plist
+          ICON='ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png'
+          test -f "$ICON"
+          test "$(sips -g pixelWidth "$ICON" | awk '/pixelWidth/{print $2}')" = '1024'
+          test "$(sips -g pixelHeight "$ICON" | awk '/pixelHeight/{print $2}')" = '1024'
 
       - name: Install App Store Connect API key
         shell: bash

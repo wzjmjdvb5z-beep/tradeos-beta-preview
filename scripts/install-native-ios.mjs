@@ -1,4 +1,4 @@
-import {readFile,writeFile} from 'node:fs/promises';
+import {copyFile,readFile,writeFile} from 'node:fs/promises';
 const delegate='ios/App/App/AppDelegate.swift';
 const storyboard='ios/App/App/Base.lproj/Main.storyboard';
 const marker='// TRADEOS NATIVE INVOICE EXPORT';
@@ -24,3 +24,8 @@ try {
     await writeFile(scenePath,scene);
   }
 } catch(error) { if(error.code!=='ENOENT')throw error; }
+
+const appIconSource='mobile/ios/VeysteadAppIcon.png';
+const appIconTarget='ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png';
+await copyFile(appIconSource,appIconTarget);
+console.log('Installed Veystead app icon.');
