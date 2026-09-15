@@ -1,7 +1,7 @@
 (()=>{
   const SUPABASE_URL='https://nynssdxfmjfqgodgynnu.supabase.co';
   const KEY='sb_publishable_ose18MeKd0ZPfTM1tbq2fg_hzfVcTxf';
-  const client=window.supabase?.createClient(SUPABASE_URL,KEY,{auth:{persistSession:true,autoRefreshToken:false,detectSessionInUrl:false}});
+  const client=window.veysteadSupabase||window.supabase?.createClient(SUPABASE_URL,KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
   if(!client)return;
 
   let queued=false;
@@ -24,7 +24,7 @@
       btn.type='button';
       btn.className='modern-more-item';
       btn.dataset.tradeosAccountPrivacy='1';
-      btn.innerHTML=`<span class="modern-more-icon">${icon}</span><span><strong>Account &amp; privacy</strong><small>Privacy policy · delete account</small></span>`;
+      btn.innerHTML=`<span class="modern-more-icon">${icon}</span><span><strong>Account, terms &amp; privacy</strong><small>Terms · privacy policy · delete account</small></span>`;
       btn.addEventListener('click',()=>{
         document.querySelector('.modern-more-sheet')?.remove();
         openSheet();
@@ -64,12 +64,16 @@
 
     const overlay=document.createElement('div');
     overlay.className='tos-account-privacy-sheet';
-    overlay.innerHTML=`<section class="tos-account-privacy-panel" role="dialog" aria-modal="true" aria-label="Account and privacy">
+    overlay.innerHTML=`<section class="tos-account-privacy-panel" role="dialog" aria-modal="true" aria-label="Account, terms and privacy">
       <div class="tos-account-privacy-handle"></div>
-      <div class="tos-account-privacy-head"><div><h3>Account &amp; privacy</h3><p>Privacy information and account controls.</p></div><button type="button" class="tos-account-privacy-close" aria-label="Close">×</button></div>
+      <div class="tos-account-privacy-head"><div><h3>Account, terms &amp; privacy</h3><p>Subscription terms, privacy information and account controls.</p></div><button type="button" class="tos-account-privacy-close" aria-label="Close">×</button></div>
+      <div class="tos-account-privacy-card">
+        <h4>Terms &amp; Conditions</h4><p>Review Veystead pricing, automatic monthly renewal, cancellation, acceptable use and service terms.</p>
+        <a class="tos-account-privacy-link" data-legal-page="terms" href="../terms.html">Read Terms &amp; Conditions</a>
+      </div>
       <div class="tos-account-privacy-card">
         <h4>Privacy policy</h4><p>See what information Veystead processes, why it is used and how to make a privacy request.</p>
-        <a class="tos-account-privacy-link" href="../privacy.html">Read privacy policy</a><p class="tos-privacy-error" role="alert" hidden></p>
+        <a class="tos-account-privacy-link" data-legal-page="privacy" href="../privacy.html">Read privacy policy</a><p class="tos-privacy-error" role="alert" hidden></p>
       </div>
       <div class="tos-account-privacy-card tos-account-delete-card">
         <h4>Delete account</h4><p>Request deletion of your Veystead user account and associated personal data. Requests are scheduled for completion within seven days, subject to records that must lawfully be retained and any business-workspace ownership that must be resolved.</p>
@@ -81,14 +85,15 @@
     document.body.appendChild(overlay);
     document.body.classList.add('tos-account-privacy-open');
 
-    overlay.querySelector('.tos-account-privacy-link')?.addEventListener('click',async e=>{
+    overlay.querySelectorAll('[data-legal-page]').forEach(link=>link.addEventListener('click',async e=>{
       if(!window.tradeOSNative?.isNative)return;
       e.preventDefault();
+      const page=link.dataset.legalPage==='terms'?'terms':'privacy';
       const error=overlay.querySelector('.tos-privacy-error');
-      error.hidden=true;
-      try{await window.tradeOSNative.openExternal('https://veystead.com/privacy.html');}
-      catch(_){error.textContent='Could not open the privacy policy. Please try again.';error.hidden=false;}
-    });
+      if(error)error.hidden=true;
+      try{await window.tradeOSNative.openExternal(`https://veystead.com/${page}.html`);}
+      catch(_){if(error){error.textContent='Could not open this page. Please try again.';error.hidden=false;}}
+    }));
     overlay.querySelector('.tos-account-privacy-close')?.addEventListener('click',closeSheet);
     overlay.addEventListener('click',e=>{if(e.target===overlay)closeSheet();});
     overlay.querySelector('.tos-account-delete-start')?.addEventListener('click',()=>confirmDeletion(overlay));
