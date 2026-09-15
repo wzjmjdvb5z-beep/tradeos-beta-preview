@@ -5,7 +5,7 @@
   if(!client)return;
 
   const managerRoles=new Set(['owner','admin','manager']);
-  const launchCode='FOUNDING50';
+  const CHECKOUT_FUNCTION='create-billing-checkout';
   let queued=false;
   const icon='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16v10H4z"/><path d="M4 10h16M8 14h4"/></svg>';
 
@@ -29,7 +29,8 @@
   }
 
   async function billingFor(companyId){
-    const r=await client.rpc('get_company_billing',{target_company:companyId});
+    let r=await client.rpc('get_company_billing_v2',{target_company:companyId});
+    if(r.error&&/get_company_billing_v2/i.test(r.error.message||''))r=await client.rpc('get_company_billing',{target_company:companyId});
     if(r.error)throw r.error;
     return (Array.isArray(r.data)?r.data[0]:r.data)||{};
   }
@@ -45,11 +46,11 @@
       const ctx=await context();
       if(!ctx||!managerRoles.has(ctx.membership.role)||!list.isConnected)return;
       if(list.querySelector('[data-tradeos-billing]'))return;
-      let subtitle='Founding Member · £19/month';
+      let subtitle='Veystead · from £19/month';
       try{
         const b=await billingFor(ctx.companyId);
-        if(b.status==='trialing')subtitle=`Founding Member · ${Number(b.days_remaining||0)} days left in trial`;
-        if(b.status==='active')subtitle='Founding Member · Active';
+        if(b.status==='trialing')subtitle=`Veystead · ${Number(b.days_remaining||0)} days left in trial`;
+        if(b.status==='active')subtitle='Veystead · Active';
         if(b.status==='past_due')subtitle='Payment needs attention';
         if(b.status==='canceled')subtitle='Subscription canceled';
       }catch(_){ }
@@ -62,14 +63,11 @@
     }finally{delete list.dataset.billingMounting;}
   }
 
-  function checkoutFor(base,companyId){
-    const raw=String(base||'').trim();
-    if(!raw)return'';
-    try{
-      const u=new URL(raw);
-      u.searchParams.set('client_reference_id',companyId);
-      return u.toString();
-    }catch(_){return raw;}
+  async function createCheckout(companyId){
+    const {data,error}=await client.functions.invoke(CHECKOUT_FUNCTION,{body:{company_id:companyId}});
+    if(error)throw error;
+    if(!data?.url)throw new Error(data?.error||'Checkout is temporarily unavailable.');
+    return data.url;
   }
 
   async function openBilling(){
@@ -78,7 +76,7 @@
     if(!ctx||!managerRoles.has(ctx.membership.role))return;
 
     const [billingRes,companyRes]=await Promise.all([
-      client.rpc('get_company_billing',{target_company:ctx.companyId}),
+      client.rpc('get_company_billing_v2',{target_company:ctx.companyId}),
       client.from('companies').select('name').eq('id',ctx.companyId).single()
     ]);
     if(billingRes.error){toast(billingRes.error.message);return;}
@@ -89,22 +87,28 @@
     const days=Number(b.days_remaining||0);
     const active=status==='active';
     const trial=status==='trialing';
-    const price=(Number(b.price_pence||1900)/100).toFixed(0);
+    const subscribed=Boolean(b.has_subscription);
+    const basePence=Number(b.price_pence||1900);
+    const seatPence=Number(b.seat_price_pence||799);
+    const activeUsers=Math.max(1,Number(b.active_user_count||1));
+    const additionalUsers=Math.max(0,Number(b.additional_user_count??activeUsers-1));
+    const monthlyPence=Number(b.monthly_total_pence||basePence+(additionalUsers*seatPence));
+    const price=(basePence/100).toFixed(0);
+    const seatPrice=(seatPence/100).toFixed(2);
+    const monthly=(monthlyPence/100).toFixed(2);
     const trialCopy=trial?`${days} day${days===1?'':'s'} remaining`:(active?'Subscription active':pretty(status));
-    const checkout=checkoutFor(b.checkout_url,ctx.companyId);
 
     const o=document.createElement('div');
     o.className='tos-billing-sheet';
     o.innerHTML=`<div class="tos-billing-panel" role="dialog" aria-modal="true" aria-label="Plan and billing">
       <div class="tos-billing-handle"></div>
-      <div class="tos-billing-head"><div><span>TRADEOS PLAN</span><h3>Founding Member</h3><p>${esc(companyName)}</p></div><button type="button" class="tos-billing-close" aria-label="Close">×</button></div>
-      <div class="tos-billing-status ${esc(status)}"><span>${esc(trialCopy)}</span><strong>£${price}<small>/month per business</small></strong></div>
-      <div class="tos-billing-founder"><strong>Launch offer — first 20 businesses</strong><p><b>50% off your first 3 paid months.</b> Use code <b>${launchCode}</b> at checkout. That makes the first 3 paid months £9.50 each, then £${price}/month.</p></div>
+      <div class="tos-billing-head"><div><span>VEYSTEAD PLAN</span><h3>Veystead</h3><p>${esc(companyName)}</p></div><button type="button" class="tos-billing-close" aria-label="Close">×</button></div>
+      <div class="tos-billing-status ${esc(status)}"><span>${esc(trialCopy)}</span><strong>£${monthly}<small>/month</small></strong></div>
+      <div class="tos-billing-founder"><strong>Simple pricing that grows with your team</strong><p>£${price}/month includes the owner, then £${seatPrice} for each additional active user. Your current total is based on ${activeUsers} active user${activeUsers===1?'':'s'}.</p></div>
       <div class="tos-billing-card"><h4>Everything you need to run the job</h4><div class="tos-billing-features"><span>✓ Jobs, team & scheduling</span><span>✓ Timesheets & job time</span><span>✓ Quotes & invoices</span><span>✓ Job profitability</span><span>✓ Customer quote/invoice links</span><span>✓ Job notes & photos</span></div></div>
-      <div class="tos-billing-founder"><strong>Founding price stays with you</strong><p>£${price}/month for the whole business while you remain on the Founding Member plan. No per-user charge.</p></div>
-      ${active?'<button type="button" class="tos-billing-cta" disabled>Plan active</button>':checkout?'<button type="button" class="tos-billing-cta">Start 14-day trial</button>':'<button type="button" class="tos-billing-cta" disabled>Payments connection being switched on</button>'}
-      ${checkout&&!active?`<p class="tos-billing-pending">Stripe will ask for payment details now. Your first charge is after the 14-day trial. Enter <b>${launchCode}</b> for the launch discount.</p>`:''}
-      ${!active&&!checkout?'<p class="tos-billing-pending">Your trial stays active while Stripe is connected. No payment is taken from this screen yet.</p>':''}
+      <div class="tos-billing-founder"><strong>Cancel anytime</strong><p>There are no staff bands or long contract. Inactive users are not included in the next calculated seat total.</p></div>
+      ${active||subscribed?`<button type="button" class="tos-billing-cta" disabled>${active?'Plan active':'Trial active'}</button>`:'<button type="button" class="tos-billing-cta">Start 14-day trial</button>'}
+      ${!active&&!subscribed?'<p class="tos-billing-pending">Stripe will collect payment details now. Your first charge is after the 14-day trial.</p>':''}
     </div>`;
 
     document.body.appendChild(o);
@@ -113,7 +117,11 @@
     const close=()=>{o.remove();document.body.style.overflow=previousOverflow;};
     o.querySelector('.tos-billing-close')?.addEventListener('click',close);
     o.addEventListener('click',e=>{if(e.target===o)close();});
-    if(checkout&&!active)o.querySelector('.tos-billing-cta')?.addEventListener('click',()=>window.location.assign(checkout));
+    if(!active&&!subscribed)o.querySelector('.tos-billing-cta')?.addEventListener('click',async e=>{
+      const button=e.currentTarget;button.disabled=true;button.textContent='Opening secure checkout…';
+      try{window.location.assign(await createCheckout(ctx.companyId));}
+      catch(err){button.disabled=false;button.textContent='Start 14-day trial';toast(err?.message||'Checkout is temporarily unavailable.');}
+    });
   }
 
   function toast(m){

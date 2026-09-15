@@ -1,13 +1,15 @@
-# Veystead subscription proposal — 14 September 2026
+# Veystead subscription model — 15 September 2026
 
-Requested: a trial, then £20/month base plus £15 per additional person up to 10 staff, with higher pricing bands at 10–25, 25–100 and 100+.
+Confirmed launch pricing:
 
-Not activated. Existing subscribers and Stripe charges remain unchanged.
-Before implementation, Ben must confirm:
-- Trial duration (current legacy offer says 14 days).
-- Whether £20 includes the owner and whether staff counts include that owner.
-- Exact prices/calculation for each larger band and non-overlapping boundaries.
-- Whether prices include VAT.
-- Existing subscriber treatment.
+- 14-day free trial.
+- £19/month includes the owner.
+- £7.99/month for each additional active user.
+- Cancel anytime.
+- No staff bands at launch.
 
-Implement server-calculated seat counts and enforce plan changes through verified payment webhooks; never trust browser totals or a static checkout link to enforce seat billing. Native purchase eligibility and App Store payment requirements must be reviewed before shipping a purchase flow. Do not expose speculative rates or trial claims to customers.
+The app displays a server-calculated total. Checkout independently counts active company members and creates a Stripe subscription with a £19 base line and the correct number of £7.99 licensed seat lines. Browser-provided totals are never trusted.
+
+Production checkout requires the Supabase Edge Function secret `STRIPE_SECRET_KEY` for the live Veystead Stripe account. Keep this key out of source control and browser code.
+
+The native iOS shell continues to hide external web-purchase controls pending App Store payment-rule review. VAT is not calculated automatically until the business confirms its VAT registration and desired tax treatment.
