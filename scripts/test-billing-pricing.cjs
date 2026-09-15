@@ -2,6 +2,7 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 
 const ui=fs.readFileSync('app/billing-v1.js','utf8');
+assert.match(ui,/window\.veysteadSupabase\|\|/);
 const migration=fs.readFileSync('scripts/veystead-pricing.sql','utf8');
 const checkout=fs.readFileSync('supabase/functions/create-billing-checkout/index.ts','utf8');
 

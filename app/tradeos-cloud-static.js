@@ -2,6 +2,7 @@
 const SUPABASE_URL='https://nynssdxfmjfqgodgynnu.supabase.co';
 const SUPABASE_KEY='sb_publishable_ose18MeKd0ZPfTM1tbq2fg_hzfVcTxf';
 const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+window.veysteadSupabase=sb;
 const money=new Intl.NumberFormat('en-GB',{style:'currency',currency:'GBP'});
 const fmt=new Intl.DateTimeFormat('en-GB',{day:'numeric',month:'short'});
 let data=null,view='home',companyId=null,week=monday(new Date());

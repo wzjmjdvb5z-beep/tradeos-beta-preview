@@ -1,7 +1,7 @@
 (()=>{
   const SUPABASE_URL='https://nynssdxfmjfqgodgynnu.supabase.co';
   const SUPABASE_KEY='sb_publishable_ose18MeKd0ZPfTM1tbq2fg_hzfVcTxf';
-  const client=window.supabase?.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
+  const client=window.veysteadSupabase||window.supabase?.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
   let busy=false;
 
   function start(){

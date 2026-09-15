@@ -41,10 +41,13 @@ async function testPricingPermission(){
   await testRateSave();await testPricingPermission();
   const manager=fs.readFileSync('app/timesheet-manager-v1.js','utf8');
   const main=fs.readFileSync('app/tradeos-cloud-static.js','utf8');
+  const secureFix=fs.readFileSync('app/team-rates-secure-fix.js','utf8');
   assert.match(manager,/rpc\('set_member_cost_rate'/);
   assert.doesNotMatch(manager,/from\('company_members'\)\.update\(\{hourly_cost/);
   assert.match(main,/if\(api==='update_member_cost'\).*rpc\('set_member_cost_rate'/);
   assert.doesNotMatch(main,/from\('company_members'\)\.update\(\{hourly_cost/);
+  assert.match(main,/window\.veysteadSupabase=sb/);
+  assert.match(secureFix,/window\.veysteadSupabase\|\|/);
   const sql=fs.readFileSync('scripts/job-delete-team-permissions.sql','utf8');
   for(const table of ['payments','invoices','weekly_time_entries','timesheets','job_timer_sessions','job_note_files','job_notes','job_materials','expenses','job_assignments','jobs'])assert.match(sql,new RegExp(`delete from public\\.${table}\\b`));
   console.log('PASS: rate RPC, employee pricing permission and complete linked job cleanup are wired.');
