@@ -29,3 +29,11 @@ const appIconSource='mobile/ios/VeysteadAppIcon.png';
 const appIconTarget='ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png';
 await copyFile(appIconSource,appIconTarget);
 console.log('Installed Veystead app icon.');
+
+const projectPath='ios/App/App.xcodeproj/project.pbxproj';
+let project=await readFile(projectPath,'utf8');
+const universalTargets=(project.match(/TARGETED_DEVICE_FAMILY = "1,2";/g)||[]).length;
+if(!universalTargets)throw new Error('Universal iPhone/iPad target setting was not found.');
+project=project.replaceAll('TARGETED_DEVICE_FAMILY = "1,2";','TARGETED_DEVICE_FAMILY = 1;');
+await writeFile(projectPath,project);
+console.log(`Restricted ${universalTargets} native build configurations to iPhone.`);

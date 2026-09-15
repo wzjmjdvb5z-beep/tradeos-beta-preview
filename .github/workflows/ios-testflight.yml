@@ -101,6 +101,8 @@ jobs:
           test -f "$ICON"
           test "$(sips -g pixelWidth "$ICON" | awk '/pixelWidth/{print $2}')" = '1024'
           test "$(sips -g pixelHeight "$ICON" | awk '/pixelHeight/{print $2}')" = '1024'
+          test "$(grep -c 'TARGETED_DEVICE_FAMILY = 1;' ios/App/App.xcodeproj/project.pbxproj)" -ge 2
+          ! grep -q 'TARGETED_DEVICE_FAMILY = "1,2";' ios/App/App.xcodeproj/project.pbxproj
 
       - name: Install App Store Connect API key
         shell: bash
