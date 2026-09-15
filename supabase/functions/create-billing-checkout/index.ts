@@ -39,6 +39,24 @@ function subscriptionPeriodEnd(subscription: any): string | null {
   return isoFromUnix(subscription?.current_period_end ?? subscription?.items?.data?.[0]?.current_period_end);
 }
 
+async function stripeRequest(key: string, path: string, method = "GET", form?: URLSearchParams) {
+  const response = await fetch(`https://api.stripe.com/v1${path}`, {
+    method,
+    headers: {
+      Authorization: `Bearer ${key}`,
+      ...(form ? { "Content-Type": "application/x-www-form-urlencoded" } : {}),
+      "Stripe-Version": "2026-07-29.dahlia",
+    },
+    body: form,
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    console.error("Stripe API error", method, path, response.status, data?.error?.type || "unknown");
+    throw new Error("stripe_request_failed");
+  }
+  return data;
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS_HEADERS });
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
@@ -55,7 +73,7 @@ Deno.serve(async (req: Request) => {
   try { body = await req.json(); } catch { return json({ error: "invalid_json" }, 400); }
   const companyId = body.company_id;
   const requestedAction = String(body.action || "checkout");
-  const action = ["status", "cancel", "resume"].includes(requestedAction) ? requestedAction : "checkout";
+  const action = ["status", "cancel", "resume", "sync_seats"].includes(requestedAction) ? requestedAction : "checkout";
   if (!looksUuid(companyId)) return json({ error: "invalid_company" }, 400);
 
   const db = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, { auth: { persistSession: false } });
@@ -74,6 +92,46 @@ Deno.serve(async (req: Request) => {
     db.from("company_billing").select("status,trial_ends_at,stripe_customer_id,stripe_subscription_id,stripe_livemode,cancel_at_period_end,current_period_end").eq("company_id", companyId).maybeSingle(),
   ]);
   if (countError || billingError) return json({ error: "billing_lookup_failed" }, 500);
+
+  const activeUsers = Math.max(1, new Set((members || []).map((row) => row.user_id)).size);
+  const additionalUsers = Math.max(0, activeUsers - 1);
+
+  if (action === "sync_seats") {
+    const subscriptionId = billing?.stripe_subscription_id;
+    if (!subscriptionId || !["trialing", "active", "past_due"].includes(billing?.status)) {
+      return json({ ok: true, active_users: activeUsers, additional_users: additionalUsers, unchanged: true });
+    }
+    const livemode = Boolean(billing?.stripe_livemode);
+    const stripeKey = stripeKeyFor(livemode);
+    if (!stripeKey) return json({ error: livemode ? "billing_not_configured" : "sandbox_billing_not_configured" }, 503);
+
+    try {
+      const subscription = await stripeRequest(stripeKey, `/subscriptions/${encodeURIComponent(subscriptionId)}`);
+      if (subscription?.id !== subscriptionId) return json({ error: "subscription_lookup_failed" }, 502);
+      const seatItem = (subscription?.items?.data || []).find((item: any) => item?.price?.id === SEAT_PRICE);
+      const currentQuantity = Number(seatItem?.quantity || 0);
+      if (currentQuantity === additionalUsers) {
+        return json({ ok: true, active_users: activeUsers, additional_users: additionalUsers, unchanged: true });
+      }
+
+      const seatForm = new URLSearchParams();
+      seatForm.set("proration_behavior", "none");
+      if (seatItem?.id && additionalUsers === 0) {
+        await stripeRequest(stripeKey, `/subscription_items/${encodeURIComponent(seatItem.id)}`, "DELETE", seatForm);
+      } else if (seatItem?.id) {
+        seatForm.set("quantity", String(additionalUsers));
+        await stripeRequest(stripeKey, `/subscription_items/${encodeURIComponent(seatItem.id)}`, "POST", seatForm);
+      } else {
+        seatForm.set("subscription", subscriptionId);
+        seatForm.set("price", SEAT_PRICE);
+        seatForm.set("quantity", String(additionalUsers));
+        await stripeRequest(stripeKey, "/subscription_items", "POST", seatForm);
+      }
+      return json({ ok: true, active_users: activeUsers, additional_users: additionalUsers, unchanged: false });
+    } catch {
+      return json({ error: "seat_sync_failed" }, 502);
+    }
+  }
 
   if (action === "cancel" || action === "resume") {
     const subscriptionId = billing?.stripe_subscription_id;
@@ -119,8 +177,6 @@ Deno.serve(async (req: Request) => {
     return json({ error: "subscription_already_exists" }, 409);
   }
 
-  const activeUsers = Math.max(1, new Set((members || []).map((row) => row.user_id)).size);
-  const additionalUsers = Math.max(0, activeUsers - 1);
   const form = new URLSearchParams();
   form.set("mode", "subscription");
   form.set("success_url", `${APP_URL}?billing=success&session_id={CHECKOUT_SESSION_ID}`);

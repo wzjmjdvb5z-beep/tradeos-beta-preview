@@ -7,6 +7,7 @@
   const managerRoles=new Set(['owner','admin','manager']);
   const CHECKOUT_FUNCTION='create-billing-checkout';
   let queued=false;
+  const seatSyncs=new Map();
   const icon='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16v10H4z"/><path d="M4 10h16M8 14h4"/></svg>';
 
   function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
@@ -35,6 +36,14 @@
     return (Array.isArray(r.data)?r.data[0]:r.data)||{};
   }
 
+  async function syncSeats(companyId){
+    const previous=seatSyncs.get(companyId);
+    if(previous&&Date.now()-previous<15*60*1000)return;
+    seatSyncs.set(companyId,Date.now());
+    const {data,error}=await client.functions.invoke(CHECKOUT_FUNCTION,{body:{company_id:companyId,action:'sync_seats'}});
+    if(error||data?.error)seatSyncs.delete(companyId);
+  }
+
   async function mountMore(){
     const list=document.querySelector('.modern-more-list');
     if(!list)return;
@@ -45,6 +54,7 @@
     try{
       const ctx=await context();
       if(!ctx||!managerRoles.has(ctx.membership.role)||!list.isConnected)return;
+      syncSeats(ctx.companyId).catch(()=>{});
       if(list.querySelector('[data-tradeos-billing]'))return;
       let subtitle='Veystead · from £19/month';
       try{
@@ -103,6 +113,8 @@
     document.querySelector('.tos-billing-sheet')?.remove();
     const ctx=await context();
     if(!ctx||!managerRoles.has(ctx.membership.role))return;
+
+    await syncSeats(ctx.companyId).catch(()=>{});
 
     const [billingRes,companyRes,ready]=await Promise.all([
       client.rpc('get_company_billing_v2',{target_company:ctx.companyId}),
