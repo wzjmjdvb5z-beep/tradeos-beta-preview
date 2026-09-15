@@ -75,7 +75,7 @@
       return;
     }
 
-    card.innerHTML=`<div class="tos-live-head"><div><p class="eyebrow">LIVE TIMER</p><h3>Start a job timer</h3><p>Pick the job and TradeOS will clock the time for you.</p></div><span class="tos-live-dot"></span></div><div class="tos-live-form"><div class="tos-live-field"><label>Job · ${jobs.length} available</label><select id="tos-timer-job">${jobs.map(j=>`<option value="${esc(j.id)}">${esc(j.title)}</option>`).join('')}</select></div><button class="tos-timer-start" id="tos-start-live">Start timer</button></div><div id="tos-live-message"></div><div class="tos-live-note">Approved weeks are finalised. Starting a timer on a submitted week returns it to Draft so the updated week can be submitted again.</div>`;
+    card.innerHTML=`<div class="tos-live-head"><div><p class="eyebrow">LIVE TIMER</p><h3>Start a job timer</h3><p>Pick the job and Veystead will clock the time for you.</p></div><span class="tos-live-dot"></span></div><div class="tos-live-form"><div class="tos-live-field"><label>Job · ${jobs.length} available</label><select id="tos-timer-job">${jobs.map(j=>`<option value="${esc(j.id)}">${esc(j.title)}</option>`).join('')}</select></div><button class="tos-timer-start" id="tos-start-live">Start timer</button></div><div id="tos-live-message"></div><div class="tos-live-note">Approved weeks are finalised. Starting a timer on a submitted week returns it to Draft so the updated week can be submitted again.</div>`;
     card.querySelector('#tos-start-live')?.addEventListener('click',startTimer);
   }
 

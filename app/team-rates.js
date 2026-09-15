@@ -43,7 +43,7 @@
 
       const card=document.createElement('section');
       card.className='card section tos-rates-card';
-      card.innerHTML=`<div class="section-head"><div><h3>Hourly rates</h3><p>Set the labour rate used for each person's approved timesheets and job profitability.</p></div></div><div class="tos-rate-note">Rates are individual. When a week is approved, TradeOS snapshots that person's current rate onto the approved timesheet, so future rate changes do not alter historic job costs.</div><div class="tos-rates-list">${(members||[]).map(memberRow).join('')}</div>`;
+      card.innerHTML=`<div class="section-head"><div><h3>Hourly rates</h3><p>Set the labour rate used for each person's approved timesheets and job profitability.</p></div></div><div class="tos-rate-note">Rates are individual. When a week is approved, Veystead snapshots that person's current rate onto the approved timesheet, so future rate changes do not alter historic job costs.</div><div class="tos-rates-list">${(members||[]).map(memberRow).join('')}</div>`;
       const teamGrid=wrap.querySelector('.team-grid');
       if(teamGrid)wrap.insertBefore(card,teamGrid);else wrap.appendChild(card);
 
@@ -51,7 +51,7 @@
       document.querySelectorAll('.cost-input,[data-save-cost]').forEach(el=>el.closest('.toolbar')?.classList.add('tos-old-cost-control'));
       enhanceReviewCards();
     }catch(err){
-      console.warn('TradeOS hourly rates:',err);
+      console.warn('Veystead hourly rates:',err);
     }finally{busy=false;}
   }
 

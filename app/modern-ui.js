@@ -72,7 +72,7 @@
       const label=key==='schedule'?'Schedule':(button.querySelector('span')?.textContent||pretty(key));
       return `<button class="modern-more-item" data-more-target="${esc(key)}"><span class="modern-more-icon">${icons[key]||icons.more}</span><span><strong>${esc(label)}</strong><small>${esc(descriptions[key]||'Open this section')}</small></span></button>`;
     }).join('');
-    overlay.innerHTML=`<div class="modern-more-panel" role="dialog" aria-modal="true" aria-label="More TradeOS sections"><div class="modern-more-handle"></div><h3 class="modern-more-title">More</h3><div class="modern-more-list">${items}<button class="modern-more-item dangerous" data-modern-signout><span class="modern-more-icon">${icons.signout}</span><span><strong>Sign out</strong><small>Sign out of TradeOS on this device</small></span></button></div><button class="btn secondary modern-more-close" type="button">Close</button></div>`;
+    overlay.innerHTML=`<div class="modern-more-panel" role="dialog" aria-modal="true" aria-label="More Veystead sections"><div class="modern-more-handle"></div><h3 class="modern-more-title">More</h3><div class="modern-more-list">${items}<button class="modern-more-item dangerous" data-modern-signout><span class="modern-more-icon">${icons.signout}</span><span><strong>Sign out</strong><small>Sign out of Veystead on this device</small></span></button></div><button class="btn secondary modern-more-close" type="button">Close</button></div>`;
     overlay.addEventListener('click',e=>{if(e.target===overlay)closeMore();});
     overlay.querySelector('.modern-more-close').addEventListener('click',closeMore);
     overlay.querySelectorAll('[data-more-target]').forEach(item=>item.addEventListener('click',()=>{

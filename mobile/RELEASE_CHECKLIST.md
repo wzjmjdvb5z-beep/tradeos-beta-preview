@@ -1,10 +1,10 @@
-# TradeOS Beta — iOS release checklist
+# Veystead Beta — iOS release checklist
 
 Status: pre-TestFlight, working name only.
 
 ## Apple identity
 
-- App Store Connect app: TradeOS Beta
+- App Store Connect app: Veystead Beta
 - Platform: iOS
 - Bundle ID: `uk.co.benjaminchurchill.fieldservice`
 - Apple Team ID: `622C977A6X`
@@ -26,7 +26,7 @@ The iOS smoke workflow must pass before a release build is considered ready:
 
 ## TestFlight build pipeline
 
-The manual `TradeOS TestFlight release` GitHub Actions workflow is prepared to:
+The manual `Veystead TestFlight release` GitHub Actions workflow is prepared to:
 
 1. generate the Capacitor iOS project;
 2. install Apple distribution signing assets from repository secrets;
@@ -49,7 +49,7 @@ Signing/API credentials must only be stored as GitHub Actions secrets. Never com
 
 ### Beta description
 
-TradeOS Beta is a job-management app for UK trade businesses. It brings customers, quotes, jobs, scheduling and weekly timesheets into one workflow so small trade teams can spend less time on admin.
+Veystead Beta is a job-management app for UK trade businesses. It brings customers, quotes, jobs, scheduling and weekly timesheets into one workflow so small trade teams can spend less time on admin.
 
 ### What to test
 
@@ -57,7 +57,7 @@ Please test the normal business workflow: sign in, create a customer, prepare a 
 
 ### Review notes draft
 
-TradeOS Beta is a free iOS companion to a paid web-based business-management service. The iOS build does not offer purchasing and does not contain a call to action to purchase outside the app. Subscription administration remains on the web service.
+Veystead Beta is a free iOS companion to a paid web-based business-management service. The iOS build does not offer purchasing and does not contain a call to action to purchase outside the app. Subscription administration remains on the web service.
 
 The app requires authentication because its core functionality is a private company workspace containing business and customer records. A dedicated App Review demo account must be supplied before submission and must remain active while the build is under review.
 

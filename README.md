@@ -1,4 +1,4 @@
-# TradeOS web app and iOS beta
+# Veystead web app and iOS beta
 
 This repository contains the live authenticated web app and the Capacitor iOS shell. It is no longer a local-only demo.
 

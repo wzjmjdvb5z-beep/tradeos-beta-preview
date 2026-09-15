@@ -58,7 +58,7 @@
       const r=await client.from('company_members').select('id,company_id,user_id,full_name,role,active').eq('user_id',user.id).eq('active',true).order('created_at',{ascending:true}).limit(1).maybeSingle();
       if(r.error)throw r.error;mine=r.data;companyId=mine?.company_id||null;
     }
-    if(!mine||!companyId)throw new Error('No active TradeOS workspace found.');
+    if(!mine||!companyId)throw new Error('No active Veystead workspace found.');
     const isManager=managerRoles.includes(mine.role);
     const [jobsR,membersR,assignR]=await Promise.all([
       client.from('jobs').select('id,company_id,title,status,address,scheduled_start,scheduled_end,notes,created_at').eq('company_id',companyId).order('scheduled_start',{ascending:true,nullsFirst:false}).limit(500),

@@ -39,7 +39,7 @@
     });
   }
   function showRecovery(){
-    root.innerHTML=`<div class="auth-shell"><section class="card auth-card"><p class="eyebrow">TRADEOS ACCOUNT</p><h2>Choose a new password</h2><p class="sub">Use at least 8 characters.</p><form id="password-recovery"><div class="field"><label>New password</label><input name="password" type="password" minlength="8" autocomplete="new-password" required></div><div class="field"><label>Confirm password</label><input name="confirm" type="password" minlength="8" autocomplete="new-password" required></div><button class="btn" type="submit">Save new password</button></form><div id="recovery-status" aria-live="polite"></div></section></div>`;
+    root.innerHTML=`<div class="auth-shell"><section class="card auth-card"><p class="eyebrow">VEYSTEAD ACCOUNT</p><h2>Choose a new password</h2><p class="sub">Use at least 8 characters.</p><form id="password-recovery"><div class="field"><label>New password</label><input name="password" type="password" minlength="8" autocomplete="new-password" required></div><div class="field"><label>Confirm password</label><input name="confirm" type="password" minlength="8" autocomplete="new-password" required></div><button class="btn" type="submit">Save new password</button></form><div id="recovery-status" aria-live="polite"></div></section></div>`;
     document.getElementById('password-recovery').addEventListener('submit',async e=>{
       e.preventDefault();
       const f=new FormData(e.currentTarget);const password=String(f.get('password')||''),confirm=String(f.get('confirm')||'');

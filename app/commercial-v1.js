@@ -56,7 +56,7 @@
       membership=r.data;
       companyId=membership?.company_id||null;
     }
-    if(!membership||!companyId)throw new Error('No active TradeOS workspace found.');
+    if(!membership||!companyId)throw new Error('No active Veystead workspace found.');
 
     const isManager=managerRoles.has(membership.role);
     if(!isManager)return {user,companyId,membership,isManager:false,quotes:[],customers:[],jobs:[],invoices:[],items:[],payments:[],profitability:[],companyProfile:null};
@@ -138,9 +138,20 @@
     const customer=ctx.customers.find(c=>c.id===q.customer_id);
     const job=ctx.jobs.find(j=>j.quote_id===q.id);
     const overlay=sheet('QUOTE',q.title||'Quote',q.quote_number||'');
-    overlay.querySelector('.tos-com-sheet-body').innerHTML=`<div class="tos-com-detail-block"><div class="tos-com-detail-row"><span>Status</span>${statusChip(q.status)}</div><div class="tos-com-detail-row"><span>Customer</span><strong>${esc(customer?.name||'Customer')}</strong></div>${customer?.email?`<div class="tos-com-detail-row"><span>Email</span><strong>${esc(customer.email)}</strong></div>`:''}${customer?.phone?`<div class="tos-com-detail-row"><span>Phone</span><strong>${esc(customer.phone)}</strong></div>`:''}${customer?.address?`<div class="tos-com-detail-row"><span>Address</span><strong>${esc(customer.address)}</strong></div>`:''}</div>${q.description?`<div class="tos-com-detail-copy"><h4>Work</h4><p>${esc(q.description)}</p></div>`:''}<div class="tos-com-breakdown"><div><span>Labour</span><strong>${money.format(num(q.labour_hours)*num(q.hourly_rate))}</strong></div><div><span>Materials</span><strong>${money.format(num(q.materials_cost))}</strong></div><div><span>Call-out</span><strong>${money.format(num(q.callout_fee))}</strong></div><div><span>Net</span><strong>${money.format(num(q.subtotal))}</strong></div><div><span>VAT</span><strong>${money.format(num(q.vat))}</strong></div><div class="total"><span>Total</span><strong>${money.format(num(q.total))}</strong></div></div>${ctx.isManager&&q.status!=='accepted'?`<button class="tos-com-save" type="button" data-sheet-convert>Turn into job</button>`:job?'<div class="tos-com-success-box">This quote has been converted into a job.</div>':''}`;
+    overlay.querySelector('.tos-com-sheet-body').innerHTML=`<div class="tos-com-detail-block"><div class="tos-com-detail-row"><span>Status</span>${statusChip(q.status)}</div><div class="tos-com-detail-row"><span>Customer</span><strong>${esc(customer?.name||'Customer')}</strong></div>${customer?.email?`<div class="tos-com-detail-row"><span>Email</span><strong>${esc(customer.email)}</strong></div>`:''}${customer?.phone?`<div class="tos-com-detail-row"><span>Phone</span><strong>${esc(customer.phone)}</strong></div>`:''}${customer?.address?`<div class="tos-com-detail-row"><span>Address</span><strong>${esc(customer.address)}</strong></div>`:''}</div>${q.description?`<div class="tos-com-detail-copy"><h4>Work</h4><p>${esc(q.description)}</p></div>`:''}<div class="tos-com-breakdown"><div><span>Labour</span><strong>${money.format(num(q.labour_hours)*num(q.hourly_rate))}</strong></div><div><span>Materials</span><strong>${money.format(num(q.materials_cost))}</strong></div><div><span>Call-out</span><strong>${money.format(num(q.callout_fee))}</strong></div><div><span>Net</span><strong>${money.format(num(q.subtotal))}</strong></div><div><span>VAT</span><strong>${money.format(num(q.vat))}</strong></div><div class="total"><span>Total</span><strong>${money.format(num(q.total))}</strong></div></div>${ctx.isManager&&q.status!=='accepted'?`<button class="tos-com-save" type="button" data-sheet-convert>Turn into job</button>`:job?'<div class="tos-com-success-box">This quote has been converted into a job. Deleting the quote will keep that job.</div>':''}${ctx.isManager?`<button class="tos-com-delete" type="button" data-sheet-delete>Delete quote</button>`:''}`;
     document.body.appendChild(overlay);
     overlay.querySelector('[data-sheet-convert]')?.addEventListener('click',()=>convertQuote(q.id,overlay.querySelector('[data-sheet-convert]')));
+    overlay.querySelector('[data-sheet-delete]')?.addEventListener('click',()=>deleteQuote(q,job,overlay.querySelector('[data-sheet-delete]')));
+  }
+
+  async function deleteQuote(quote,job,button){
+    const warning=job?'The linked job will stay in Veystead.':'This cannot be undone.';
+    if(!window.confirm(`Permanently delete ${quote.quote_number||'this quote'}?\n\n${warning}`))return;
+    await busyButton(button,'Deleting…',async()=>{
+      const r=await client.rpc('delete_quote',{target_company:currentCtx.companyId,target_quote:quote.id});
+      if(r.error)throw r.error;
+      closeSheet();toast('Quote deleted');await reload('quotes');
+    });
   }
 
   async function convertQuote(id,button){

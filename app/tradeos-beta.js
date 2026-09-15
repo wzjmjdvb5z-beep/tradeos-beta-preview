@@ -27,7 +27,7 @@
   root.innerHTML = `
     <div class="app">
       <header class="topbar">
-        <div class="brand"><div class="logo">T</div><div><h1>TradeOS</h1></div></div>
+        <div class="brand"><div class="logo">T</div><div><h1>Veystead</h1></div></div>
         <div class="beta-pill"><span class="beta-dot"></span> Founding beta</div>
       </header>
       <main id="main"></main>

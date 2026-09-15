@@ -32,7 +32,7 @@
         }
       }
       if(panel){
-        panel.innerHTML='<div class="tos-timer-handle"></div><h3>Timer stopped</h3><p class="sub">This timer overlapped time that was already on your timesheet, so no duplicate time was saved.</p><div class="tos-timer-error soft"><strong>Conflict prevented</strong><span>TradeOS has stopped the invalid timer. Refreshing your timesheet…</span></div>';
+        panel.innerHTML='<div class="tos-timer-handle"></div><h3>Timer stopped</h3><p class="sub">This timer overlapped time that was already on your timesheet, so no duplicate time was saved.</p><div class="tos-timer-error soft"><strong>Conflict prevented</strong><span>Veystead has stopped the invalid timer. Refreshing your timesheet…</span></div>';
       }
       setTimeout(()=>location.reload(),1600);
     }catch(err){

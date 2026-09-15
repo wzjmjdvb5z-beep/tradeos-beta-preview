@@ -1,8 +1,8 @@
-# TradeOS security
+# Veystead security
 
 ## Current launch architecture
 
-TradeOS is a static web client backed by Supabase Auth, Postgres, Storage and RPC functions. The browser bundle contains a Supabase **publishable** key only. Publishable keys are intended for public clients and are not privileged secrets.
+Veystead is a static web client backed by Supabase Auth, Postgres, Storage and RPC functions. The browser bundle contains a Supabase **publishable** key only. Publishable keys are intended for public clients and are not privileged secrets.
 
 Never commit or expose a Supabase secret key, `service_role` key, database password, private API credential or payment-provider secret in this repository or any browser-delivered asset.
 
@@ -19,7 +19,7 @@ RLS is defence in depth. New tables, views, functions and storage buckets must b
 
 ## Public quote and invoice links
 
-Customer quote and invoice pages intentionally work without a TradeOS account. They use random UUID share tokens that must match the target document, must not be revoked and must not be expired.
+Customer quote and invoice pages intentionally work without a Veystead account. They use random UUID share tokens that must match the target document, must not be revoked and must not be expired.
 
 Only the current public RPCs should be executable by anonymous users:
 

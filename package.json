@@ -1,8 +1,8 @@
 {
-  "name": "tradeos-mobile",
+  "name": "veystead-mobile",
   "private": true,
   "version": "0.1.0",
-  "description": "TradeOS iOS shell and mobile build tooling",
+  "description": "Veystead iOS shell and mobile build tooling",
   "scripts": {
     "mobile:prepare": "node scripts/prepare-mobile.mjs",
     "ios:generate": "npm run mobile:prepare && npx cap add ios && node scripts/install-native-ios.mjs",
