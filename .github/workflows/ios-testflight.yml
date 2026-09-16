@@ -86,9 +86,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          node scripts/test-appstore-release.cjs
           test -f mobile-web/privacy.html
           test -f mobile-web/app/index.html
           test -f mobile-web/app/account-privacy-v1.js
+          test ! -e mobile-web/app/_expo
+          test ! -e mobile-web/app/tradeos-beta.js
+          test ! -e mobile-web/cloud/app.js
+          test ! -e mobile-web/cloud/app-v2.js
           grep -q 'request_account_deletion' mobile-web/app/account-privacy-v1.js
           grep -q 'buy.stripe.com' mobile-web/app/mobile-native.js
           grep -q 'data-tradeos-billing' mobile-web/app/mobile-native.js

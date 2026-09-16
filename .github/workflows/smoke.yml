@@ -43,6 +43,7 @@ jobs:
           node scripts/test-member-name.cjs
           node scripts/test-release-fixes.cjs
           node scripts/test-team-financial-controls.cjs
+          node scripts/test-appstore-release.cjs
 
       - name: Verify idle UI and live updates in browser
         run: |
