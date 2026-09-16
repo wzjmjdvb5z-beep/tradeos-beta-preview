@@ -41,6 +41,12 @@ assert.match(accountPrivacy, /request_account_deletion/, 'In-app account deletio
 const native = fs.readFileSync('mobile/native-entry.js', 'utf8');
 assert.match(native, /buy\.stripe\.com/, 'The native purchase-link guard must remain in place');
 assert.match(native, /data-tradeos-billing/, 'The native billing controls must remain hidden');
+assert.match(native, /safe-area-inset-top/, 'The native header must clear the iPhone status bar');
+assert.match(native, /\.tos-br-fab \{ display: none !important; \}/, 'The floating feedback control must stay hidden in the native app');
+
+const productTheme = fs.readFileSync('app/product-v3.css', 'utf8');
+assert.match(productTheme, /\.tos-schedule-stat[^}]*background:#fff!important/, 'Schedule summary cards must use the light product theme');
+assert.match(productTheme, /\.tos-unscheduled-job\{background:#fbfcfe!important/, 'Unscheduled job cards must retain readable light-theme contrast');
 
 const capacitor = JSON.parse(fs.readFileSync('capacitor.config.json', 'utf8'));
 assert.equal(capacitor.appName, 'Veystead', 'The iOS display name must remain Veystead');

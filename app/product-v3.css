@@ -51,7 +51,12 @@ label,.tos-field label{color:#475569!important}input,select,textarea,.tos-field 
 .tos-sheet{background:rgba(15,23,42,.48)!important}.tos-sheet-panel{background:#fff!important;color:var(--v3-text)!important;border-color:var(--v3-line)!important;box-shadow:0 -18px 50px rgba(15,23,42,.18)!important}.tos-sheet-handle{background:#cbd5e1!important}.tos-sheet-head h3{color:var(--v3-text)!important}.tos-close{background:#f8fafc!important;color:#24324a!important;border-color:var(--v3-line)!important}.tos-form-error{background:#fff0f1!important;color:#b43f48!important;border-color:#efc2c6!important}.tos-delete{background:#fff1f2!important;color:#bd424b!important;border-color:#efc7ca!important}
 
 /* Schedule */
-.tos-schedule-shell,.tos-schedule-card,.tos-unscheduled,.tos-day-column,.tos-job-card{background:#fff!important;color:var(--v3-text)!important;border-color:var(--v3-line)!important}.tos-job-card strong,.tos-schedule-shell h2,.tos-schedule-shell h3{color:var(--v3-text)!important}.tos-job-card small,.tos-schedule-shell p{color:var(--v3-muted)!important}
+.tos-schedule-shell,.tos-schedule-card,.tos-unscheduled,.tos-schedule-stat,.tos-day-column,.tos-schedule-job,.tos-today-card{background:#fff!important;color:var(--v3-text)!important;border-color:var(--v3-line)!important;box-shadow:var(--v3-shadow)!important}
+.tos-unscheduled-job{background:#fbfcfe!important;color:var(--v3-text)!important;border-color:var(--v3-line)!important}
+.tos-schedule-stat small,.tos-unscheduled-job small,.tos-job-address,.tos-today-meta,.tos-day-head small{color:var(--v3-muted)!important}
+.tos-schedule-stat strong,.tos-unscheduled-job strong,.tos-job-title,.tos-today-card h4,.tos-day-head strong,.tos-schedule-shell h2,.tos-schedule-shell h3{color:var(--v3-text)!important}
+.tos-day-total,.tos-job-time strong,.tos-today-time{color:var(--v3-blue)!important}
+.tos-job-status{background:#f4f6f8!important;color:#64748b!important;border-color:#dce3ea!important}
 
 /* Team */
 .tos-rates-card{background:#fff!important;color:var(--v3-text)!important;border-color:var(--v3-line)!important}.tos-rate-row{background:#fbfcfe!important;border-color:var(--v3-line)!important}.tos-rate-person strong,.tos-rate-label{color:var(--v3-text)!important}.tos-rate-person small,.tos-rate-help,.tos-rate-note{color:var(--v3-muted)!important}.tos-rate-note{background:#f1f5ff!important;border-color:#dce6ff!important}.tos-rate-input{background:#fff!important;color:var(--v3-text)!important;border-color:var(--v3-line-strong)!important}

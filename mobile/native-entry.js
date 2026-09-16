@@ -13,7 +13,19 @@ if (Capacitor.isNativePlatform()) {
   const style = document.createElement('style');
   style.textContent = `
     html.tradeos-native, html.tradeos-native body { overscroll-behavior-y: none; touch-action: manipulation; }
-    html.tradeos-native .bottom-nav { padding-bottom: max(env(safe-area-inset-bottom), 10px); }
+    html.tradeos-native .topbar {
+      min-height: calc(66px + env(safe-area-inset-top)) !important;
+      padding-top: calc(11px + env(safe-area-inset-top)) !important;
+    }
+    html.tradeos-native .app { padding-bottom: calc(94px + env(safe-area-inset-bottom)) !important; }
+    html.tradeos-native .bottom-nav {
+      bottom: 0 !important;
+      width: 100% !important;
+      height: calc(74px + env(safe-area-inset-bottom)) !important;
+      padding-bottom: max(env(safe-area-inset-bottom), 10px) !important;
+      border-radius: 24px 24px 0 0 !important;
+    }
+    html.tradeos-native .tos-br-fab { display: none !important; }
     html.tradeos-native input, html.tradeos-native textarea, html.tradeos-native select { font-size: 16px; }
     html.tradeos-native [data-tradeos-billing],
     html.tradeos-native .tos-billing-sheet { display: none !important; }
