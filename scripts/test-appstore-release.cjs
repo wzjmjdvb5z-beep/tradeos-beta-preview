@@ -43,7 +43,7 @@ const appIndex = fs.readFileSync('app/index.html', 'utf8');
 assert.match(appIndex, /<script src="\.\/account-privacy-v1\.js[^>]*defer><\/script>/, 'The account deletion feature must be loaded by the release app');
 assert.match(appIndex, /tradeos-cloud-static\.js\?v=app-review-42/, 'The production wording bundle must use a fresh cache version');
 assert.match(appIndex, /beta-readiness\.js\?v=app-review-42/, 'The production onboarding bundle must use a fresh cache version');
-assert.match(appIndex, /schedule-board\.js\?v=app-review-42/, 'The corrected schedule bundle must use a fresh cache version');
+assert.match(appIndex, /schedule-board\.js\?v=app-review-43/, 'The corrected schedule bundle must use a fresh cache version');
 assert.match(appIndex, /team-rates\.js\?v=app-review-42/, 'The corrected team labels must use a fresh cache version');
 
 const native = fs.readFileSync('mobile/native-entry.js', 'utf8');
@@ -60,6 +60,9 @@ assert.match(productTheme, /\.tos-schedule-panel\{[^}]*box-sizing:border-box!imp
 assert.match(productTheme, /\.tos-schedule-panel\{[^}]*background:#fff!important[^}]*color:var\(--v3-text\)!important/, 'The schedule sheet must use readable light-theme colours');
 assert.match(productTheme, /\.tos-schedule-field input[^}]*box-sizing:border-box!important[^}]*max-width:100%!important/, 'Schedule inputs must not overflow the sheet');
 assert.match(productTheme, /\.tos-sheet-save\{background:var\(--v3-blue\)!important;color:#fff!important/, 'The schedule save action must remain readable');
+
+const scheduleBoard = fs.readFileSync('app/schedule-board.js', 'utf8');
+assert.match(scheduleBoard, /removeAttribute\('data-home-simple'\)/, 'Schedule must clear the Home-only visibility marker before rendering');
 
 const capacitor = JSON.parse(fs.readFileSync('capacitor.config.json', 'utf8'));
 assert.equal(capacitor.appName, 'Veystead', 'The iOS display name must remain Veystead');

@@ -72,6 +72,9 @@
   async function renderSchedule(){
     if(!active||loading)return;
     const wrap=document.querySelector('main.wrap');if(!wrap)return;
+    // Home's simplified view hides every direct child except its own panels.
+    // Clear that route-only marker before mounting Schedule on web or native.
+    wrap.removeAttribute('data-home-simple');
     loading=true;
     wrap.innerHTML='<div class="tos-schedule-shell"><section class="card section"><div class="empty">Loading schedule…</div></section></div>';
     try{ctx=await loadContext();draw(wrap);}catch(err){wrap.innerHTML=`<div class="tos-schedule-shell"><section class="card section"><div class="error">${esc(err?.message||'Could not load the schedule.')}</div></section></div>`;}finally{loading=false;}
