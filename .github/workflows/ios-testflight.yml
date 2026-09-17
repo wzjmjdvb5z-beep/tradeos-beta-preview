@@ -88,6 +88,8 @@ jobs:
           set -euo pipefail
           node scripts/test-appstore-release.cjs
           test -f mobile-web/privacy.html
+          test -f mobile-web/terms.html
+          test -f mobile-web/support.html
           test -f mobile-web/app/index.html
           test -f mobile-web/app/account-privacy-v1.js
           test ! -e mobile-web/app/_expo

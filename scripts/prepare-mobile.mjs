@@ -22,7 +22,7 @@ for (const path of [
   await rm(path, { recursive: true, force: true });
 }
 
-for (const file of ['index.html', 'account.html', 'feedback.html', 'privacy.html']) {
+for (const file of ['index.html', 'account.html', 'feedback.html', 'privacy.html', 'support.html', 'terms.html']) {
   await cp(file, `${out}/${file}`);
 }
 
