@@ -40,9 +40,18 @@
 
   async function openSchedule(){
     active=true;
+    resetScheduleScroll();
     document.querySelectorAll('.bottom-nav .nav').forEach(x=>x.classList.toggle('active',x.dataset.nav==='schedule'));
     await renderSchedule();
-    window.scrollTo({top:0,behavior:'smooth'});
+    resetScheduleScroll();
+    requestAnimationFrame(resetScheduleScroll);
+  }
+
+  function resetScheduleScroll(){
+    const root=document.scrollingElement||document.documentElement;
+    if(root)root.scrollTop=0;
+    if(document.body)document.body.scrollTop=0;
+    window.scrollTo(0,0);
   }
 
   async function loadContext(){
@@ -66,7 +75,8 @@
       client.from('job_assignments').select('id,job_id,member_id').eq('company_id',companyId).limit(1000)
     ]);
     for(const r of [jobsR,membersR,assignR])if(r.error)throw r.error;
-    return{user,mine,companyId,isManager,jobs:jobsR.data||[],members:membersR.data||[],assignments:assignR.data||[]};
+    const members=(membersR.data||[]).filter(member=>member.user_id);
+    return{user,mine,companyId,isManager,jobs:jobsR.data||[],members,assignments:assignR.data||[]};
   }
 
   async function renderSchedule(){
