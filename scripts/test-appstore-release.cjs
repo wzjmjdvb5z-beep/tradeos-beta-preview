@@ -43,7 +43,7 @@ const appIndex = fs.readFileSync('app/index.html', 'utf8');
 assert.match(appIndex, /<script src="\.\/account-privacy-v1\.js[^>]*defer><\/script>/, 'The account deletion feature must be loaded by the release app');
 assert.match(appIndex, /tradeos-cloud-static\.js\?v=app-review-42/, 'The production wording bundle must use a fresh cache version');
 assert.match(appIndex, /beta-readiness\.js\?v=app-review-42/, 'The production onboarding bundle must use a fresh cache version');
-assert.match(appIndex, /schedule-board\.js\?v=app-review-43/, 'The corrected schedule bundle must use a fresh cache version');
+assert.match(appIndex, /schedule-board\.js\?v=app-review-44/, 'The corrected schedule bundle must use a fresh cache version');
 assert.match(appIndex, /team-rates\.js\?v=app-review-42/, 'The corrected team labels must use a fresh cache version');
 
 const native = fs.readFileSync('mobile/native-entry.js', 'utf8');
@@ -63,6 +63,8 @@ assert.match(productTheme, /\.tos-sheet-save\{background:var\(--v3-blue\)!import
 
 const scheduleBoard = fs.readFileSync('app/schedule-board.js', 'utf8');
 assert.match(scheduleBoard, /removeAttribute\('data-home-simple'\)/, 'Schedule must clear the Home-only visibility marker before rendering');
+assert.match(scheduleBoard, /function resetScheduleScroll\(\)/, 'Schedule must reset any native sheet scroll offset before rendering');
+assert.match(scheduleBoard, /filter\(member=>member\.user_id\)/, 'Pending invitations must not appear as assignable team members');
 
 const capacitor = JSON.parse(fs.readFileSync('capacitor.config.json', 'utf8'));
 assert.equal(capacitor.appName, 'Veystead', 'The iOS display name must remain Veystead');
